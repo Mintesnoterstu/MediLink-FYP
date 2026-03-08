@@ -4,8 +4,14 @@ import { styled } from '@mui/material/styles';
 
 const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: 12,
-  background: `linear-gradient(135deg, ${theme.palette.primary.main}15 0%, ${theme.palette.secondary.main}15 100%)`,
+  background: `linear-gradient(135deg, rgba(37, 192, 211, 0.1) 0%, rgba(83, 124, 137, 0.1) 100%)`,
   border: `1px solid ${theme.palette.divider}`,
+  transition: 'all 0.3s ease',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4],
+    borderColor: theme.palette.primary.main,
+  },
 }));
 
 interface MetricCardProps {
@@ -35,7 +41,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
           {icon && <Box>{icon}</Box>}
         </Box>
         <Box display="flex" alignItems="baseline" gap={0.5}>
-          <Typography variant="h4" component="div" fontWeight={700}>
+          <Typography variant="h4" component="div" fontWeight={700} sx={{ color: 'primary.main' }}>
             {value}
           </Typography>
           {unit && (

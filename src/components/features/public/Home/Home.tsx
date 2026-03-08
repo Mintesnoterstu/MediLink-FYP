@@ -1,276 +1,325 @@
-import React, { useMemo } from 'react';
-import { Box, Typography, Grid, Card, CardContent, Button, Chip, Container, Avatar } from '@mui/material';
-import { LocalHospital, Favorite, SmartToy, MenuBook, TrendingUp, People, VerifiedUser } from '@mui/icons-material';
-import { useTranslation } from 'react-i18next';
+import React from 'react';
+import {
+  Box,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
+  Container,
+  Stack,
+  TextField,
+  Divider,
+  Button,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { PrimaryButton, SecondaryButton, EmergencyButton } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
-import { PrimaryButton, EmergencyButton } from '@/components/ui';
-import { PlatformStats } from '@/types';
 
-interface HomeProps {
-  platformStats?: PlatformStats;
-  seasonalTips?: string[];
-  communityAlerts?: Array<{ id: string; title: string; message: string; severity: 'info' | 'warning' | 'error' }>;
-}
-
-export const Home: React.FC<HomeProps> = ({
-  platformStats = {
-    usersHelped: 12500,
-    aiAccuracy: 87,
-    diseasesCovered: 150,
-    remediesVerified: 85,
-    activeUsers: 3200,
-  },
-  seasonalTips = [],
-  communityAlerts = [],
-}) => {
-  const { t } = useTranslation();
+export const Home: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
 
-  const welcomeMessage = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('home.goodMorning');
-    if (hour < 18) return t('home.goodAfternoon');
-    return t('home.goodEvening');
-  }, [t]);
-
-  const quickAccessItems = [
-    { icon: <LocalHospital />, title: t('home.diseaseLibrary'), path: '/diseases', color: 'primary' },
-    { icon: <Favorite />, title: t('home.symptomChecker'), path: '/symptom-checker', color: 'error' },
-    { icon: <MenuBook />, title: t('home.traditionalMedicine'), path: '/traditional-medicine', color: 'success' },
-    { icon: <SmartToy />, title: t('home.aboutAI'), path: '/about-ai', color: 'info' },
+  const dashboardServices = [
+    {
+      title: 'AI Symptom Checker',
+      description: 'Instant guidance with bilingual explanations.',
+      cta: 'Try now',
+      path: '/symptom-checker',
+    },
+    {
+      title: 'Health Records',
+      description: 'View a consolidated history of your visits and labs.',
+      cta: 'View sample',
+      path: '/dashboard',
+    },
+    {
+      title: 'Consent Management',
+      description: 'Control who can access each record and when.',
+      cta: 'Learn more',
+      path: '/dashboard',
+    },
+    {
+      title: 'Medication Tracker',
+      description: 'Stay on schedule with dosage reminders.',
+      cta: 'View demo',
+      path: '/medications',
+    },
+    {
+      title: 'Appointment Scheduler',
+      description: 'Book and manage consultations with one view.',
+      cta: 'Check schedule',
+      path: '/appointments',
+    },
+    {
+      title: 'Provider Connection',
+      description: 'Find and connect with clinicians securely.',
+      cta: 'Browse providers',
+      path: '/about',
+    },
   ];
 
-  const roleBasedFeatures = useMemo(() => {
-    if (!isAuthenticated) {
-      return [
-        { title: t('home.patientFeatures'), description: t('home.patientFeaturesDesc'), icon: <People /> },
-        { title: t('home.providerFeatures'), description: t('home.providerFeaturesDesc'), icon: <VerifiedUser /> },
-      ];
-    }
-    return user?.role === 'patient'
-      ? [{ title: t('home.yourDashboard'), description: t('home.dashboardDesc'), icon: <TrendingUp /> }]
-      : [{ title: t('home.providerDashboard'), description: t('home.providerDashboardDesc'), icon: <VerifiedUser /> }];
-  }, [isAuthenticated, user, t]);
+  const publicResources = [
+    {
+      title: 'Disease Hub',
+      description: 'Comprehensive disease information and prevention.',
+      cta: 'Explore',
+      path: '/diseases',
+    },
+    {
+      title: 'Medicine Hub',
+      description: 'Dosage, side effects, and Ethiopian availability.',
+      cta: 'Explore',
+      path: '/medicine-hub',
+    },
+    {
+      title: 'AI Health Assistant',
+      description: 'Context-aware support across every page.',
+      cta: 'Chat now',
+      path: '/about-ai',
+    },
+    {
+      title: 'About MediLink',
+      description: 'Mission, services, and clinical partnerships.',
+      cta: 'Learn more',
+      path: '/about',
+    },
+    {
+      title: 'Health Library',
+      description: 'Articles, guides, and prevention checklists.',
+      cta: 'Read',
+      path: '/symptom-checker',
+    },
+    {
+      title: 'Emergency',
+      description: 'Quick emergency contacts and guidance.',
+      cta: 'Open',
+      path: '/emergency',
+    },
+  ];
 
   return (
     <Box>
-      {/* Hero Section */}
+      {/* Hero */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 60%, #2C3E50 100%)',
           color: 'white',
-          py: 8,
-          textAlign: 'center',
+          py: { xs: 8, md: 10 },
         }}
       >
-        <Container>
-          <Typography variant="h2" component="h1" gutterBottom fontWeight={700}>
-            {welcomeMessage}
-          </Typography>
-          <Typography variant="h4" component="h2" gutterBottom>
-            {t('home.welcomeToMediLink')}
-          </Typography>
-          <Typography variant="h6" sx={{ mt: 2, opacity: 0.9 }}>
-            {t('home.tagline')}
-          </Typography>
-          {!isAuthenticated && (
-            <Box mt={4} display="flex" gap={2} justifyContent="center">
-              <PrimaryButton
-                variant="contained"
-                size="large"
-                onClick={() => navigate('/register')}
-                sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' } }}
-              >
-                {t('auth.register')}
-              </PrimaryButton>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate('/login')}
-                sx={{ borderColor: 'white', color: 'white', '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.1)' } }}
-              >
-                {t('auth.login')}
-              </Button>
-            </Box>
-          )}
-        </Container>
-      </Box>
-
-      <Container sx={{ py: 6 }}>
-        {/* Quick Access Grid */}
-        <Typography variant="h4" component="h2" gutterBottom fontWeight={600} mb={4}>
-          {t('home.quickAccess')}
-        </Typography>
-        <Grid container spacing={3} sx={{ mb: 6 }}>
-          {quickAccessItems.map((item) => (
-            <Grid item xs={12} sm={6} md={3} key={item.path}>
-              <Card
+        <Container maxWidth="lg">
+          <Grid container spacing={6} alignItems="center">
+            <Grid item xs={12} md={7}>
+              <Typography variant="h3" component="h1" fontWeight={700} gutterBottom>
+                MediLink — Secure, bilingual, AI-powered healthcare
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9, mb: 4, maxWidth: 720 }}>
+                Access a unified platform for public resources and personal dashboards. Designed for patients, providers, and administrators.
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <PrimaryButton
+                  size="large"
+                  onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}
+                  sx={{ minWidth: 160 }}
+                >
+                  Get started
+                </PrimaryButton>
+                <SecondaryButton
+                  size="large"
+                  onClick={() => navigate('/about')}
+                  sx={{ borderColor: 'white', color: 'white' }}
+                >
+                  Learn more
+                </SecondaryButton>
+              </Stack>
+            </Grid>
+            <Grid item xs={12} md={5}>
+              <Box
                 sx={{
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6,
-                  },
+                  bgcolor: 'rgba(255,255,255,0.12)',
+                  borderRadius: 3,
+                  p: 3,
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  color: 'white',
                 }}
-                onClick={() => navigate(item.path)}
               >
-                <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                  <Avatar sx={{ bgcolor: `${item.color}.main`, width: 64, height: 64, mx: 'auto', mb: 2 }}>
-                    {item.icon}
-                  </Avatar>
-                  <Typography variant="h6" fontWeight={600}>
-                    {item.title}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* Live Stats */}
-        <Box sx={{ bgcolor: 'background.default', borderRadius: 2, p: 4, mb: 6 }}>
-          <Typography variant="h5" gutterBottom fontWeight={600}>
-            {t('home.platformStats')}
-          </Typography>
-          <Grid container spacing={4} sx={{ mt: 2 }}>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h3" fontWeight={700} color="primary.main">
-                  {platformStats.usersHelped.toLocaleString()}+
+                <Typography variant="h6" fontWeight={600} gutterBottom>
+                  Platform at a glance
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('home.usersHelped')}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h3" fontWeight={700} color="success.main">
-                  {platformStats.aiAccuracy}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('home.aiAccuracy')}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h3" fontWeight={700} color="info.main">
-                  {platformStats.diseasesCovered}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('home.diseasesCovered')}
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={6} sm={3}>
-              <Box textAlign="center">
-                <Typography variant="h3" fontWeight={700} color="warning.main">
-                  {platformStats.remediesVerified}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t('home.remediesVerified')}
-                </Typography>
+                <Grid container spacing={2}>
+                  {[
+                    { label: 'Diseases covered', value: '150+' },
+                    { label: 'AI guidance accuracy', value: '87%' },
+                    { label: 'Active users', value: '12,500+' },
+                    { label: 'Traditional remedies verified', value: '85' },
+                  ].map((item) => (
+                    <Grid item xs={6} key={item.label}>
+                      <Typography variant="h4" fontWeight={700}>
+                        {item.value}
+                      </Typography>
+                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                        {item.label}
+                      </Typography>
+                    </Grid>
+                  ))}
+                </Grid>
               </Box>
             </Grid>
           </Grid>
-        </Box>
+        </Container>
+      </Box>
 
-        {/* Emergency Quick Access */}
-        <Box sx={{ mb: 6, textAlign: 'center' }}>
-          <Typography variant="h5" gutterBottom fontWeight={600}>
-            {t('home.emergencyAccess')}
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        {/* Quick access dashboard preview */}
+        <Box sx={{ mb: 6 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Quick access to dashboard services
           </Typography>
-          <EmergencyButton
-            size="large"
-            onClick={() => navigate('/emergency')}
-            sx={{ mt: 2, px: 4, py: 2 }}
-          >
-            {t('emergency.trigger')}
-          </EmergencyButton>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 780 }}>
+            A concise overview of personal and professional tools. Public visitors can browse all resources; authentication is only required for personalized features.
+          </Typography>
+          <Grid container spacing={3}>
+            {dashboardServices.map((service) => (
+              <Grid item xs={12} sm={6} md={4} key={service.title}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 3,
+                    transition: 'all 0.25s ease',
+                    '&:hover': {
+                      boxShadow: 6,
+                      borderColor: 'primary.main',
+                      transform: 'translateY(-6px)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+                      {service.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                      {service.description}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => navigate(service.path)}
+                      sx={{ alignSelf: 'flex-start', fontWeight: 600, color: 'primary.main' }}
+                    >
+                      {service.cta}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         </Box>
 
-        {/* Role-Based Preview */}
-        <Typography variant="h5" gutterBottom fontWeight={600} mb={3}>
-          {t('home.exploreFeatures')}
-        </Typography>
-        <Grid container spacing={3} sx={{ mb: 6 }}>
-          {roleBasedFeatures.map((feature, idx) => (
-            <Grid item xs={12} md={6} key={idx}>
-              <Card>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2} mb={2}>
-                    <Avatar sx={{ bgcolor: 'primary.main' }}>{feature.icon}</Avatar>
-                    <Typography variant="h6" fontWeight={600}>
-                      {feature.title}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {feature.description}
-                  </Typography>
-                  {!isAuthenticated && (
-                    <Button
-                      variant="outlined"
-                      onClick={() => navigate('/register')}
-                      sx={{ mt: 2 }}
-                    >
-                      {t('home.getStarted')}
+        {/* Access gateway */}
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: '100%', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h5" fontWeight={700}>
+                  Access your dashboard
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Secure login for personal features. Public resources remain open without authentication.
+                </Typography>
+                <Stack spacing={2}>
+                  <TextField label="Email" type="email" fullWidth />
+                  <TextField label="PIN or Password" type="password" fullWidth />
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    <PrimaryButton fullWidth onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}>
+                      Login
+                    </PrimaryButton>
+                    <SecondaryButton fullWidth onClick={() => navigate('/register')}>
+                      Create account
+                    </SecondaryButton>
+                  </Stack>
+                  <Stack direction="row" justifyContent="space-between">
+                    <Button size="small" variant="text" onClick={() => navigate('/login')}>
+                      Show PIN pad
                     </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                    <Button size="small" variant="text" onClick={() => navigate('/login')}>
+                      Forgot PIN?
+                    </Button>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: '100%', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="h6" fontWeight={700} gutterBottom>
+                  Public resources remain open
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  You can review diseases, medicines, and health guidance without logging in. Sign in only when you want to save or track personal data.
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Stack spacing={1.5}>
+                  <Typography variant="body2">• Explore disease and medicine hubs</Typography>
+                  <Typography variant="body2">• Use the AI assistant for explanations</Typography>
+                  <Typography variant="body2">• Switch languages instantly (English/Amharic)</Typography>
+                  <Typography variant="body2">• Access emergency instructions at any time</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
 
-        {/* Seasonal Health Tips */}
-        {seasonalTips.length > 0 && (
-          <Box sx={{ bgcolor: 'info.light', borderRadius: 2, p: 3, mb: 4 }}>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              {t('home.seasonalTips')}
-            </Typography>
-            {seasonalTips.map((tip, idx) => (
-              <Typography key={idx} variant="body2" sx={{ mb: 1 }}>
-                • {tip}
-              </Typography>
-            ))}
-          </Box>
-        )}
-
-        {/* Community Alerts */}
-        {communityAlerts.length > 0 && (
-          <Box>
-            <Typography variant="h6" gutterBottom fontWeight={600}>
-              {t('home.communityAlerts')}
-            </Typography>
-            {communityAlerts.map((alert) => (
-              <Card key={alert.id} sx={{ mb: 2 }}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={2}>
-                    <Chip
-                      label={alert.severity}
-                      color={alert.severity === 'error' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info'}
+        {/* Public resources */}
+        <Box sx={{ mb: 8 }}>
+          <Typography variant="h4" fontWeight={700} gutterBottom>
+            Explore our public resources
+          </Typography>
+          <Grid container spacing={3}>
+            {publicResources.map((resource) => (
+              <Grid item xs={12} sm={6} md={4} key={resource.title}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    transition: 'all 0.25s ease',
+                    '&:hover': {
+                      boxShadow: 6,
+                      borderColor: 'primary.main',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      {resource.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
+                      {resource.description}
+                    </Typography>
+                    <Button
                       size="small"
-                    />
-                    <Box>
-                      <Typography variant="subtitle1" fontWeight={600}>
-                        {alert.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {alert.message}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
+                      variant="text"
+                      onClick={() => navigate(resource.path)}
+                      sx={{ alignSelf: 'flex-start', fontWeight: 600, color: 'primary.main' }}
+                    >
+                      {resource.cta}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
             ))}
-          </Box>
-        )}
+          </Grid>
+        </Box>
       </Container>
+
+      {/* Fixed emergency access */}
+      <Box sx={{ position: 'fixed', right: 24, bottom: 24, zIndex: 1200 }}>
+        <EmergencyButton onClick={() => navigate('/emergency')} />
+      </Box>
     </Box>
   );
 };

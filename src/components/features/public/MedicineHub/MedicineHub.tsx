@@ -139,7 +139,7 @@ export const MedicineHub: React.FC<MedicineHubProps> = ({
     <Box>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+          background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 60%, #2C3E50 100%)',
           color: 'white',
           py: 4,
           textAlign: 'center',

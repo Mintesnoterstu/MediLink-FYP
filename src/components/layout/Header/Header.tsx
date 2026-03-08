@@ -18,7 +18,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <AppBar position="sticky" elevation={2}>
+    <AppBar 
+      position="sticky" 
+      elevation={2}
+      sx={{
+        background: 'linear-gradient(135deg, #25C0D3 0%, #537C89 100%)',
+      }}
+    >
       <Toolbar>
         {onMenuClick && (
           <IconButton edge="start" color="inherit" onClick={onMenuClick} sx={{ mr: 2 }}>

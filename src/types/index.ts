@@ -1,5 +1,12 @@
 // User and Authentication Types
+// NOTE: Keep base roles stable to avoid breaking existing UI/routes.
 export type UserRole = 'patient' | 'provider' | 'admin';
+
+// Jimma Zone admin hierarchy (for role === 'admin')
+export type AdminLevel = 'zonal' | 'woreda' | 'city' | 'facility';
+
+// Health professional types (for role === 'provider')
+export type HealthProfessionalType = 'doctor' | 'nurse';
 
 export interface User {
   id: string;
@@ -9,6 +16,16 @@ export interface User {
   phone?: string;
   language: 'en' | 'am';
   createdAt: string;
+
+  // Optional fields to model Jimma Zone hierarchy without breaking existing mocks
+  adminLevel?: AdminLevel;
+  zone?: string; // e.g., "Jimma"
+  woreda?: string; // e.g., "Seka"
+  city?: string; // e.g., "Jimma City"
+  facility?: string; // e.g., "Jimma Hospital"
+
+  professionalType?: HealthProfessionalType;
+  licenseNumber?: string;
 }
 
 export interface AuthState {
@@ -234,25 +251,32 @@ export interface Disease {
   nameAmharic?: string;
   category: DiseaseCategory;
   description: string;
+  descriptionAmharic?: string;
   symptoms: string[];
+  symptomsAmharic?: string[];
   causes: string[];
+  causesAmharic?: string[];
   prevention: string[];
+  preventionAmharic?: string[];
   treatment: string[];
+  treatmentAmharic?: string[];
   severity: 'mild' | 'moderate' | 'severe' | 'critical';
-  prevalence: RegionalPrevalence;
+  prevalence?: RegionalPrevalence;
   seasonal?: string[];
+  seasonalAmharic?: string[];
   bodyRegions: string[];
   progressionTimeline?: DiseaseStage[];
   visualAssets?: DiseaseVisuals;
 }
 
-export type DiseaseCategory = 
+export type DiseaseCategory =
   | 'infectious'
   | 'chronic'
   | 'respiratory'
   | 'maternal-child'
   | 'tropical'
-  | 'common-ailments';
+  | 'common-ailments'
+  | 'autoimmune';
 
 export interface DiseaseStage {
   stage: string;
@@ -281,27 +305,38 @@ export interface VerifiedRemedy {
   nameOromo?: string;
   nameTigrinya?: string;
   category: RemedyCategory;
+  bodyPart?: string;
+  healthGoal?: string;
   description: string;
+  descriptionAmharic?: string;
   preparation: string;
+  preparationAmharic?: string;
   dosage: string;
+  dosageAmharic?: string;
   indications: string[];
+  indicationsAmharic?: string[];
   contraindications: string[];
+  contraindicationsAmharic?: string[];
   verificationLevel: VerificationLevel;
   ministryApproved: boolean;
   scientificEvidence: EvidenceLevel;
   safetyWarnings: string[];
+  safetyWarningsAmharic?: string[];
   medicationInteractions: string[];
   regionalVariations?: string[];
   culturalContext: string;
+  culturalContextAmharic?: string;
   modernCorrelation?: string;
 }
 
-export type RemedyCategory = 
+export type RemedyCategory =
   | 'herbal'
   | 'traditional-practices'
   | 'food-medicine'
   | 'spiritual'
-  | 'modern-traditional';
+  | 'modern-traditional'
+  | 'traditional'
+  | 'modern';
 
 export type VerificationLevel = 'verified' | 'under-review' | 'unverified';
 export type EvidenceLevel = 'strong' | 'moderate' | 'anecdotal' | 'none';

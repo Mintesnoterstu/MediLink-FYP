@@ -30,7 +30,7 @@ const StyledButton = styled(Button)(({ theme }) => ({
 export const EmergencyButton: React.FC<ButtonProps> = ({ children, ...props }) => {
   return (
     <StyledButton variant="contained" startIcon={<LocalHospital />} {...props}>
-      {children}
+      {children ?? 'Emergency'}
     </StyledButton>
   );
 };

@@ -10,7 +10,7 @@ export const About: React.FC = () => {
     <Box>
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 60%, #2C3E50 100%)',
           color: 'white',
           py: 6,
           textAlign: 'center',

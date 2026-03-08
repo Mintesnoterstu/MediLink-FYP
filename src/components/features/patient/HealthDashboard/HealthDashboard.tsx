@@ -1,15 +1,54 @@
-import React, { useEffect, useMemo } from 'react';
-import { Grid, Box, Typography, LinearProgress, Chip, List, ListItem, ListItemText, Button, Paper, Divider } from '@mui/material';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Grid,
+  Box,
+  Typography,
+  LinearProgress,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  Button,
+  Paper,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Tooltip,
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHealthData } from '@/contexts/HealthDataContext';
 import { useTranslation } from 'react-i18next';
-import { HealthCard, MetricCard, LoadingSpinner } from '@/components/ui';
+import { HealthCard, MetricCard, PrimaryButton } from '@/components/ui';
 import { AIHealthAdvisor, EmergencyAlert } from '@/components/features/shared';
-import { Favorite, LocalHospital, Medication, CalendarToday, TrendingUp, TrendingDown, Remove, History, Security, Add, Assignment, Vaccines, Warning } from '@mui/icons-material';
+import {
+  Favorite,
+  LocalHospital,
+  Medication as MedicationIcon,
+  CalendarToday,
+  TrendingUp,
+  TrendingDown,
+  Remove,
+  History,
+  Security,
+  Add,
+  Assignment,
+  Vaccines,
+  Warning,
+  Edit,
+  Delete,
+} from '@mui/icons-material';
 import { format, subDays, isAfter, parseISO, addDays, differenceInDays } from 'date-fns';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { PatientData, MedicationAdherence, HealthTrend, ConsentRecord, Appointment, AIRecommendation } from '@/types';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { PatientData, MedicationAdherence, HealthTrend, ConsentRecord, Appointment, AIRecommendation, VitalSigns, Medication } from '@/types';
 
 interface HealthDashboardProps {
   patientData?: PatientData;
@@ -46,7 +85,21 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
     loadAIRecommendations,
     loadAppointments,
     isLoading: contextIsLoading,
+    addVitalSigns,
+    addMedication,
+    updateMedication,
+    removeMedication,
+    createAppointment,
+    updateAppointment,
   } = useHealthData();
+
+  // Edit states
+  const [vitalSignsDialogOpen, setVitalSignsDialogOpen] = useState(false);
+  const [medicationDialogOpen, setMedicationDialogOpen] = useState(false);
+  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
+  const [editingMedication, setEditingMedication] = useState<Partial<Medication> | null>(null);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [editingVitalSigns, setEditingVitalSigns] = useState<Partial<VitalSigns>>({});
 
   const patientData = propPatientData || contextPatientData;
   const aiRecommendations = propAIRecommendations || contextAIRecommendations;
@@ -156,9 +209,8 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
   const navigate = useNavigate();
 
-  if (isLoading) {
-    return <LoadingSpinner message={t('common.loading')} />;
-  }
+  // Always show content, even if loading or no data
+  // The fallback data ensures we always have something to display
 
   // Calculate Health Score (0-100)
   const healthScore = useMemo(() => {
@@ -239,7 +291,7 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
         type: 'medication',
         title: `Started ${med.name}`,
         date: parseISO(med.startDate),
-        icon: <Medication />,
+        icon: <MedicationIcon />,
       });
     });
 
@@ -249,8 +301,13 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom fontWeight={700} mb={3}>
-        {t('dashboard.welcome')}, {user?.name}
+      {isLoading && (
+        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1000 }}>
+          <LinearProgress color="primary" />
+        </Box>
+      )}
+      <Typography variant="h4" component="h1" gutterBottom fontWeight={700} mb={3} sx={{ color: 'primary.main' }}>
+        {t('dashboard.welcome')}, {user?.name || 'User'}
       </Typography>
 
       <Grid container spacing={3}>
@@ -259,18 +316,34 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
           <HealthCard title={t('dashboard.healthOverview')} icon={<Favorite color="primary" />}>
             <Grid container spacing={2}>
               <Grid item xs={12} md={3}>
-                <Box textAlign="center" p={2} bgcolor="primary.light" borderRadius={2}>
-                  <Typography variant="h3" fontWeight={700} color="primary.main">
+                <Box 
+                  textAlign="center" 
+                  p={3} 
+                  sx={{ 
+                    background: 'linear-gradient(135deg, #25C0D3 0%, #1A9FB0 100%)',
+                    borderRadius: 3,
+                    boxShadow: 3,
+                  }}
+                >
+                  <Typography variant="h3" fontWeight={700} color="white">
                     {healthScore}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)', mt: 1 }}>
                     Health Score
                   </Typography>
                   <LinearProgress
                     variant="determinate"
                     value={healthScore}
                     color={healthScore >= 80 ? 'success' : healthScore >= 60 ? 'warning' : 'error'}
-                    sx={{ mt: 1, height: 8, borderRadius: 4 }}
+                    sx={{ 
+                      mt: 2, 
+                      height: 8, 
+                      borderRadius: 4,
+                      backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: 'white',
+                      }
+                    }}
                   />
                 </Box>
               </Grid>
@@ -280,42 +353,147 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                     <>
                       {latestVitals.bloodPressure && (
                         <Grid item xs={6} sm={4}>
-                          <MetricCard
-                            label="Blood Pressure"
-                            value={latestVitals.bloodPressure}
-                            unit="mmHg"
-                          />
+                          <Box position="relative">
+                            <MetricCard
+                              label="Blood Pressure"
+                              value={latestVitals.bloodPressure}
+                              unit="mmHg"
+                            />
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 4,
+                                  right: 4,
+                                  bgcolor: 'background.paper',
+                                  '&:hover': { bgcolor: 'primary.light', color: 'white' },
+                                }}
+                                onClick={() => {
+                                  setEditingVitalSigns({ ...latestVitals });
+                                  setVitalSignsDialogOpen(true);
+                                }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </Grid>
                       )}
                       {latestVitals.heartRate && (
                         <Grid item xs={6} sm={4}>
-                          <MetricCard
-                            label="Heart Rate"
-                            value={latestVitals.heartRate}
-                            unit="bpm"
-                          />
+                          <Box position="relative">
+                            <MetricCard
+                              label="Heart Rate"
+                              value={latestVitals.heartRate}
+                              unit="bpm"
+                            />
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 4,
+                                  right: 4,
+                                  bgcolor: 'background.paper',
+                                  '&:hover': { bgcolor: 'primary.light', color: 'white' },
+                                }}
+                                onClick={() => {
+                                  setEditingVitalSigns({ ...latestVitals });
+                                  setVitalSignsDialogOpen(true);
+                                }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </Grid>
                       )}
                       {latestVitals.temperature && (
                         <Grid item xs={6} sm={4}>
-                          <MetricCard
-                            label="Temperature"
-                            value={latestVitals.temperature}
-                            unit="°C"
-                          />
+                          <Box position="relative">
+                            <MetricCard
+                              label="Temperature"
+                              value={latestVitals.temperature}
+                              unit="°C"
+                            />
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 4,
+                                  right: 4,
+                                  bgcolor: 'background.paper',
+                                  '&:hover': { bgcolor: 'primary.light', color: 'white' },
+                                }}
+                                onClick={() => {
+                                  setEditingVitalSigns({ ...latestVitals });
+                                  setVitalSignsDialogOpen(true);
+                                }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </Grid>
                       )}
                       {latestVitals.weight && (
                         <Grid item xs={6} sm={4}>
-                          <MetricCard
-                            label="Weight"
-                            value={latestVitals.weight}
-                            unit="kg"
-                          />
+                          <Box position="relative">
+                            <MetricCard
+                              label="Weight"
+                              value={latestVitals.weight}
+                              unit="kg"
+                            />
+                            <Tooltip title="Edit">
+                              <IconButton
+                                size="small"
+                                sx={{
+                                  position: 'absolute',
+                                  top: 4,
+                                  right: 4,
+                                  bgcolor: 'background.paper',
+                                  '&:hover': { bgcolor: 'primary.light', color: 'white' },
+                                }}
+                                onClick={() => {
+                                  setEditingVitalSigns({ ...latestVitals });
+                                  setVitalSignsDialogOpen(true);
+                                }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
                         </Grid>
                       )}
                     </>
                   )}
+                  <Grid item xs={6} sm={4}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Add />}
+                      onClick={() => {
+                        setEditingVitalSigns({ date: new Date().toISOString() });
+                        setVitalSignsDialogOpen(true);
+                      }}
+                      sx={{
+                        height: '100%',
+                        minHeight: 120,
+                        borderStyle: 'dashed',
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                        '&:hover': {
+                          borderStyle: 'solid',
+                          bgcolor: 'primary.light',
+                          color: 'white',
+                        },
+                      }}
+                    >
+                      Add Vital Signs
+                    </Button>
+                  </Grid>
                 </Grid>
               </Grid>
             </Grid>
@@ -352,7 +530,7 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                 <Button
                   fullWidth
                   variant="outlined"
-                  startIcon={<Medication />}
+                  startIcon={<MedicationIcon />}
                   onClick={() => navigate('/medications')}
                   sx={{ justifyContent: 'flex-start' }}
                 >
@@ -581,22 +759,102 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
         {/* Current Medications */}
         <Grid item xs={12} md={6}>
-          <HealthCard title={t('dashboard.medications')} icon={<Medication color="primary" />}>
+          <HealthCard
+            title={t('dashboard.medications')}
+            icon={<MedicationIcon color="primary" />}
+            action={
+              <Button
+                size="small"
+                startIcon={<Add />}
+                onClick={() => {
+                  setEditingMedication(null);
+                  setMedicationDialogOpen(true);
+                }}
+                sx={{ color: 'primary.main' }}
+              >
+                Add
+              </Button>
+            }
+          >
             {currentMedications.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No current medications
-              </Typography>
+              <Box textAlign="center" py={2}>
+                <Typography variant="body2" color="text.secondary" mb={2}>
+                  No current medications
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Add />}
+                  onClick={() => {
+                    setEditingMedication(null);
+                    setMedicationDialogOpen(true);
+                  }}
+                >
+                  Add Medication
+                </Button>
+              </Box>
             ) : (
               <Box>
-                {currentMedications.slice(0, 3).map((med: any) => (
-                  <Box key={med.id} mb={1}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {med.name}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {med.dosage} - {med.frequency}
-                    </Typography>
-                  </Box>
+                {currentMedications.slice(0, 5).map((med: any) => (
+                  <Paper
+                    key={med.id}
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      mb: 1,
+                      bgcolor: 'background.default',
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        boxShadow: 2,
+                      },
+                    }}
+                  >
+                    <Box display="flex" justifyContent="space-between" alignItems="start">
+                      <Box flex={1}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {med.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {med.dosage} - {med.frequency}
+                        </Typography>
+                        {med.startDate && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Started: {format(parseISO(med.startDate), 'MMM dd, yyyy')}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Box>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setEditingMedication(med);
+                            setMedicationDialogOpen(true);
+                          }}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={async () => {
+                            if (window.confirm('Are you sure you want to remove this medication?')) {
+                              try {
+                                await removeMedication(med.id);
+                              } catch (error) {
+                                alert('Failed to remove medication');
+                              }
+                            }
+                          }}
+                          sx={{ color: 'error.main' }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Paper>
                 ))}
               </Box>
             )}
@@ -605,23 +863,83 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
         {/* Upcoming Appointments */}
         <Grid item xs={12} md={6}>
-          <HealthCard title={t('dashboard.upcomingAppointments')} icon={<CalendarToday color="primary" />}>
+          <HealthCard
+            title={t('dashboard.upcomingAppointments')}
+            icon={<CalendarToday color="primary" />}
+            action={
+              <Button
+                size="small"
+                startIcon={<Add />}
+                onClick={() => {
+                  setEditingAppointment(null);
+                  setAppointmentDialogOpen(true);
+                }}
+                sx={{ color: 'primary.main' }}
+              >
+                Add
+              </Button>
+            }
+          >
             {upcomingAppointments.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                {t('dashboard.noUpcomingAppointments')}
-              </Typography>
+              <Box textAlign="center" py={2}>
+                <Typography variant="body2" color="text.secondary" mb={2}>
+                  {t('dashboard.noUpcomingAppointments')}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<Add />}
+                  onClick={() => {
+                    setEditingAppointment(null);
+                    setAppointmentDialogOpen(true);
+                  }}
+                >
+                  Book Appointment
+                </Button>
+              </Box>
             ) : (
               <Box>
                 {upcomingAppointments.map((apt: Appointment) => (
-                  <Box key={apt.id} mb={1} p={1} bgcolor="background.default" borderRadius={1}>
-                    <Typography variant="body2" fontWeight={600}>
-                      {apt.providerName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {format(parseISO(apt.date), 'MMM dd, yyyy')} at {apt.time}
-                    </Typography>
-                    <Chip label={apt.type} size="small" sx={{ mt: 0.5 }} />
-                  </Box>
+                  <Paper
+                    key={apt.id}
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      mb: 1,
+                      bgcolor: 'background.default',
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        boxShadow: 2,
+                      },
+                    }}
+                  >
+                    <Box display="flex" justifyContent="space-between" alignItems="start">
+                      <Box flex={1}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {apt.providerName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {format(parseISO(apt.date), 'MMM dd, yyyy')} at {apt.time}
+                        </Typography>
+                        <Chip label={apt.type} size="small" sx={{ mt: 0.5 }} />
+                      </Box>
+                      <Box>
+                        <IconButton
+                          size="small"
+                          onClick={() => {
+                            setEditingAppointment(apt);
+                            setAppointmentDialogOpen(true);
+                          }}
+                          sx={{ color: 'primary.main' }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Paper>
                 ))}
               </Box>
             )}
@@ -652,7 +970,7 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
 
         {/* Medication Adherence */}
         <Grid item xs={12} md={6}>
-          <HealthCard title={t('dashboard.medicationAdherence')} icon={<Medication color="primary" />}>
+          <HealthCard title={t('dashboard.medicationAdherence')} icon={<MedicationIcon color="primary" />}>
             {medicationAdherence.length === 0 ? (
               <Typography variant="body2" color="text.secondary">
                 {t('dashboard.noMedications')}
@@ -706,7 +1024,7 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
-                      <Tooltip />
+                      <RechartsTooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)' }} />
                       <Line type="monotone" dataKey="value" stroke="#1976d2" strokeWidth={2} />
                     </LineChart>
                   </ResponsiveContainer>
@@ -739,6 +1057,443 @@ export const HealthDashboard: React.FC<HealthDashboardProps> = ({
           </Grid>
         )}
       </Grid>
+
+      {/* Vital Signs Dialog */}
+      <Dialog
+        open={vitalSignsDialogOpen}
+        onClose={() => {
+          setVitalSignsDialogOpen(false);
+          setEditingVitalSigns({});
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {editingVitalSigns.date ? 'Edit Vital Signs' : 'Add New Vital Signs'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Blood Pressure (mmHg)"
+                value={editingVitalSigns.bloodPressure || ''}
+                onChange={(e) =>
+                  setEditingVitalSigns({ ...editingVitalSigns, bloodPressure: e.target.value })
+                }
+                placeholder="120/80"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Heart Rate (bpm)"
+                type="number"
+                value={editingVitalSigns.heartRate || ''}
+                onChange={(e) =>
+                  setEditingVitalSigns({
+                    ...editingVitalSigns,
+                    heartRate: parseFloat(e.target.value) || undefined,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Temperature (°C)"
+                type="number"
+                value={editingVitalSigns.temperature || ''}
+                onChange={(e) =>
+                  setEditingVitalSigns({
+                    ...editingVitalSigns,
+                    temperature: parseFloat(e.target.value) || undefined,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Weight (kg)"
+                type="number"
+                value={editingVitalSigns.weight || ''}
+                onChange={(e) =>
+                  setEditingVitalSigns({
+                    ...editingVitalSigns,
+                    weight: parseFloat(e.target.value) || undefined,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Height (cm)"
+                type="number"
+                value={editingVitalSigns.height || ''}
+                onChange={(e) =>
+                  setEditingVitalSigns({
+                    ...editingVitalSigns,
+                    height: parseFloat(e.target.value) || undefined,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Blood Sugar (mg/dL)"
+                type="number"
+                value={editingVitalSigns.bloodSugar || ''}
+                onChange={(e) =>
+                  setEditingVitalSigns({
+                    ...editingVitalSigns,
+                    bloodSugar: parseFloat(e.target.value) || undefined,
+                  })
+                }
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Date"
+                type="datetime-local"
+                value={
+                  editingVitalSigns.date
+                    ? format(parseISO(editingVitalSigns.date), "yyyy-MM-dd'T'HH:mm")
+                    : format(new Date(), "yyyy-MM-dd'T'HH:mm")
+                }
+                onChange={(e) =>
+                  setEditingVitalSigns({
+                    ...editingVitalSigns,
+                    date: new Date(e.target.value).toISOString(),
+                  })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setVitalSignsDialogOpen(false);
+              setEditingVitalSigns({});
+            }}
+          >
+            Cancel
+          </Button>
+          <PrimaryButton
+            onClick={async () => {
+              try {
+                await addVitalSigns(editingVitalSigns as VitalSigns);
+                setVitalSignsDialogOpen(false);
+                setEditingVitalSigns({});
+                if (user?.id) {
+                  loadPatientData(user.id);
+                }
+              } catch (error) {
+                alert('Failed to save vital signs');
+              }
+            }}
+          >
+            Save
+          </PrimaryButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Medication Dialog */}
+      <Dialog
+        open={medicationDialogOpen}
+        onClose={() => {
+          setMedicationDialogOpen(false);
+          setEditingMedication(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {editingMedication ? 'Edit Medication' : 'Add New Medication'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Medication Name"
+                value={editingMedication?.name || ''}
+                onChange={(e) =>
+                  setEditingMedication({
+                    ...(editingMedication || {}),
+                    name: e.target.value,
+                    id: editingMedication?.id || '',
+                    dosage: editingMedication?.dosage || '',
+                    frequency: editingMedication?.frequency || '',
+                    startDate: editingMedication?.startDate || new Date().toISOString(),
+                    reminderEnabled: editingMedication?.reminderEnabled || false,
+                  })
+                }
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Dosage"
+                value={editingMedication?.dosage || ''}
+                onChange={(e) =>
+                  setEditingMedication({
+                    ...(editingMedication || {}),
+                    dosage: e.target.value,
+                  })
+                }
+                placeholder="e.g., 5mg"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Frequency"
+                value={editingMedication?.frequency || ''}
+                onChange={(e) =>
+                  setEditingMedication({
+                    ...(editingMedication || {}),
+                    frequency: e.target.value,
+                  })
+                }
+                placeholder="e.g., Once daily"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Start Date"
+                type="date"
+                value={
+                  editingMedication?.startDate
+                    ? format(parseISO(editingMedication.startDate), 'yyyy-MM-dd')
+                    : format(new Date(), 'yyyy-MM-dd')
+                }
+                onChange={(e) =>
+                  setEditingMedication({
+                    ...(editingMedication || {}),
+                    startDate: new Date(e.target.value).toISOString(),
+                  })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="End Date (optional)"
+                type="date"
+                value={
+                  editingMedication?.endDate
+                    ? format(parseISO(editingMedication.endDate), 'yyyy-MM-dd')
+                    : ''
+                }
+                onChange={(e) =>
+                  setEditingMedication({
+                    ...(editingMedication || {}),
+                    endDate: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+                  })
+                }
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Pharmacy (optional)"
+                value={editingMedication?.pharmacy || ''}
+                onChange={(e) =>
+                  setEditingMedication({
+                    ...(editingMedication || {}),
+                    pharmacy: e.target.value,
+                  })
+                }
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setMedicationDialogOpen(false);
+              setEditingMedication(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <PrimaryButton
+            onClick={async () => {
+              try {
+                if (editingMedication?.id) {
+                  await updateMedication(editingMedication as Medication);
+                } else {
+                  const { id, ...medData } = editingMedication || {};
+                  await addMedication(medData as Omit<Medication, 'id'>);
+                }
+                setMedicationDialogOpen(false);
+                setEditingMedication(null);
+                if (user?.id) {
+                  loadPatientData(user.id);
+                }
+              } catch (error) {
+                alert('Failed to save medication');
+              }
+            }}
+          >
+            Save
+          </PrimaryButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Appointment Dialog */}
+      <Dialog
+        open={appointmentDialogOpen}
+        onClose={() => {
+          setAppointmentDialogOpen(false);
+          setEditingAppointment(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {editingAppointment ? 'Edit Appointment' : 'Book New Appointment'}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Provider Name"
+                value={editingAppointment?.providerName || ''}
+                onChange={(e) =>
+                  setEditingAppointment({
+                    ...(editingAppointment || ({} as Appointment)),
+                    providerName: e.target.value,
+                  } as Appointment)
+                }
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Date"
+                type="date"
+                value={
+                  editingAppointment?.date
+                    ? format(parseISO(editingAppointment.date), 'yyyy-MM-dd')
+                    : format(new Date(), 'yyyy-MM-dd')
+                }
+                onChange={(e) =>
+                  setEditingAppointment({
+                    ...(editingAppointment || ({} as Appointment)),
+                    date: new Date(e.target.value).toISOString(),
+                  } as Appointment)
+                }
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Time"
+                type="time"
+                value={editingAppointment?.time || '10:00'}
+                onChange={(e) =>
+                  setEditingAppointment({
+                    ...(editingAppointment || ({} as Appointment)),
+                    time: e.target.value,
+                  } as Appointment)
+                }
+                InputLabelProps={{ shrink: true }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Appointment Type</InputLabel>
+                <Select
+                  value={editingAppointment?.type || 'consultation'}
+                  onChange={(e) =>
+                    setEditingAppointment({
+                      ...(editingAppointment || ({} as Appointment)),
+                      type: e.target.value as 'consultation' | 'follow-up' | 'emergency',
+                    } as Appointment)
+                  }
+                  label="Appointment Type"
+                >
+                  <MenuItem value="consultation">Consultation</MenuItem>
+                  <MenuItem value="follow-up">Follow-up</MenuItem>
+                  <MenuItem value="emergency">Emergency</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes (optional)"
+                multiline
+                rows={3}
+                value={editingAppointment?.notes || ''}
+                onChange={(e) =>
+                  setEditingAppointment({
+                    ...(editingAppointment || ({} as Appointment)),
+                    notes: e.target.value,
+                  } as Appointment)
+                }
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setAppointmentDialogOpen(false);
+              setEditingAppointment(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <PrimaryButton
+            onClick={async () => {
+              try {
+                if (editingAppointment?.id) {
+                  await updateAppointment(editingAppointment);
+                } else {
+                  if (!editingAppointment) return;
+                  const { id, ...aptData } = editingAppointment;
+                  await createAppointment({
+                    patientId: user?.id || '',
+                    providerId: 'provider-1', // This should come from selection
+                    providerName: aptData.providerName || 'Provider',
+                    date: aptData.date || new Date().toISOString(),
+                    time: aptData.time || '10:00',
+                    type: aptData.type || 'consultation',
+                    status: 'scheduled',
+                    notes: aptData.notes,
+                  });
+                }
+                setAppointmentDialogOpen(false);
+                setEditingAppointment(null);
+                if (user?.id) {
+                  loadAppointments(user.id);
+                }
+              } catch (error) {
+                alert('Failed to save appointment');
+              }
+            }}
+          >
+            Save
+          </PrimaryButton>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

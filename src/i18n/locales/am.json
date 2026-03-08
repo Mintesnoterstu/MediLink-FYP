@@ -280,6 +280,34 @@
     "forDoctorsDesc": "በመስማማት የታካሚ መዝገቦችን ይድረሱ፣ የእንክትክት ትብብርን ያሻሽሉ እና የተደጋጋሚ ምርመራዎችን ይቀንሱ።",
     "forHealthcareSystem": "ለጤና እንክትክት ስርዓት",
     "forHealthcareSystemDesc": "የጤና እንክትክት ድግግሞሽን ይቀንሱ፣ የታካሚ ውጤቶችን ያሻሽሉ እና አጠቃላይ የስርዓት ብቃትን ያሻሽሉ።"
+  },
+  "chat": {
+    "title": "Medi ረዳት",
+    "greetingDefault": "ሰላም! እኔ Medi ረዳት ነኝ፣ የእርስዎ AI የጤና መሪ። በጤና ጥያቄዎች ላይ እርዳታ ለመስጠት እዚህ ነኝ። ዛሬ እንዴት ልረዳዎ ይችላለሁ?",
+    "greetingDiseases": "የበሽታ ቤተ-መጽሐፋችንን እያስሱ እንደሆነ አያለሁ። ማንኛውንም ሁኔታ በተሻለ ሁኔታ ለመረዳት እንዴት ልረዳዎ ይችላለሁ?",
+    "greetingSymptoms": "ምልክቶችዎን ለመረዳት እዚህ ነኝ። ምን ማወቅ ይፈልጋሉ?",
+    "greetingDashboard": "ሰላም! በጤና መረጃዎ ላይ በመመርኮዝ የግል የጤና ምክር ልሰጥ እችላለሁ። እንዴት ልረዳዎ ይችላለሁ?",
+    "greetingMedicine": "ሕክምናዎችን እና መድሃኒቶችን ለመረዳት ልረዳዎ እችላለሁ። ምን ማስተማር ይፈልጋሉ?",
+    "placeholder": "የጤና ጥያቄዎን ይተይቡ...",
+    "footer": "ለመላክ Enter ይጫኑ • ለአዲስ መስመር Shift+Enter",
+    "disclaimerTitle": "የጤና ማስተዋሻ:",
+    "disclaimerText": "እኔ አጠቃላይ የጤና መረጃ የምሰጥ AI ረዳት ነኝ። ለጤና አስቸኳይ ሁኔታዎች፣ ወዲያውኑ የአስቸኳይ አገልግሎቶችን ያገናኙ። ለጤና ምክር ሁልጊዜ የጤና አገልግሎት ባለሙያዎችን ይጠይቁ።",
+    "emergency": "የአስቸኳይ አገልግሎቶች",
+    "errorMessage": "ይቅርታ፣ ነገር ግን ስህተት ተጋግሞኛል። እባክዎ እንደገና ይሞክሩ ወይም ለአስቸኳይ ሁኔታዎች ከጤና አገልግሎት አቅራቢ ይጠይቁ።",
+    "lowConfidence": "ዝቅተኛ እምነት",
+    "fallbackMode": "የተገደበ ሁኔታ",
+    "quickActions": "ፈጣን ተግባራት:",
+    "explainSymptoms": "ምልክቶችን ያብራሩ",
+    "showPrevention": "መከላከልን ያሳዩ",
+    "findTreatments": "ሕክምናዎችን ያግኙ",
+    "analyzeSymptoms": "ምልክቶችን ይመርምሩ",
+    "isThisSerious": "ይህ ከባድ ነው?",
+    "healthAdvice": "የጤና ምክር",
+    "medicationHelp": "የመድሃኒት እርዳታ",
+    "treatmentInfo": "የሕክምና መረጃ",
+    "remedyInfo": "የመድሃኒት መረጃ",
+    "generalHealth": "አጠቃላይ ጤና",
+    "findInfo": "መረጃ ያግኙ"
   }
 }
 

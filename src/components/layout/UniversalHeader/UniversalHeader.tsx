@@ -1,50 +1,63 @@
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Typography, Box, IconButton, Badge, TextField, InputAdornment, Menu, MenuItem, Avatar, Button, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider } from '@mui/material';
-import { Notifications, Menu as MenuIcon, Search, LocalHospital as EmergencyIcon, Brightness4, Brightness7, Home, LocalHospital, Favorite, MenuBook, SmartToy, Login, PersonAdd, Info } from '@mui/icons-material';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  IconButton,
+  Badge,
+  Menu,
+  MenuItem,
+  Avatar,
+  Button,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+} from '@mui/material';
+import {
+  Notifications,
+  Menu as MenuIcon,
+  Home,
+  LocalHospital,
+  Login,
+  PersonAdd,
+  Info,
+} from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUI } from '@/contexts/UIContext';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LanguageSelector } from '@/components/features/shared/LanguageSelector/LanguageSelector';
+import logo from '../../../../logo.png';
 
 interface UniversalHeaderProps {
   onMenuClick?: () => void;
-  showSearch?: boolean;
-  showQuickSymptomCheck?: boolean;
 }
 
 export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   onMenuClick,
-  showSearch = true,
-  showQuickSymptomCheck = true,
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { notifications, theme, toggleTheme } = useUI();
+  const { notifications } = useUI();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchQuery, setSearchQuery] = useState('');
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const navItems = [
-    { label: t('nav.home'), path: '/', icon: <Home /> },
-    { label: t('nav.diseases'), path: '/diseases', icon: <LocalHospital /> },
-    { label: t('nav.symptoms'), path: '/symptom-checker', icon: <Favorite /> },
-    { label: t('nav.traditional'), path: '/medicine-hub', icon: <MenuBook /> },
-    { label: t('nav.ai'), path: '/about-ai', icon: <SmartToy /> },
-    { label: t('nav.about'), path: '/about', icon: <Info /> },
-  ];
+  const isDashboard = location.pathname.startsWith('/dashboard');
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setSearchQuery('');
-    }
-  };
+  const navItems = [
+    { label: t('nav.home'), fallback: 'HOME', path: '/', icon: <Home /> },
+    { label: t('nav.diseases'), fallback: 'DISEASE INFORMATION', path: '/diseases', icon: <LocalHospital /> },
+    { label: t('nav.medicineHub'), fallback: 'MEDICINE HUB', path: '/medicine-hub', icon: <LocalHospital /> },
+    { label: t('nav.about'), fallback: 'ABOUT', path: '/about', icon: <Info /> },
+  ];
 
   const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
@@ -66,124 +79,83 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   };
 
   return (
-    <AppBar position="sticky" elevation={2}>
+    <AppBar
+      position="sticky"
+      elevation={2}
+      sx={{
+        background: 'linear-gradient(135deg, #2C3E50 0%, #4A90E2 100%)',
+      }}
+    >
       <Toolbar sx={{ gap: 2 }}>
-        {/* Left: Logo and Menu */}
-        <IconButton
-          edge="start"
-          color="inherit"
-          onClick={() => setMobileMenuOpen(true)}
-          sx={{ mr: 1, display: { xs: 'block', md: onMenuClick ? 'block' : 'none' } }}
-        >
-          <MenuIcon />
-        </IconButton>
-        <Typography
-          variant="h6"
-          component="div"
-          sx={{ fontWeight: 700, cursor: 'pointer' }}
-          onClick={() => navigate('/')}
-        >
-          MediLink
-        </Typography>
-
-        {/* Center: Navigation and Search */}
-        <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 1, ml: 4 }}>
-          {navItems.map((item) => (
-            <Button
-              key={item.path}
-              color="inherit"
-              onClick={() => handleNavClick(item.path)}
-              sx={{
-                color: location.pathname === item.path ? 'primary.light' : 'inherit',
-                fontWeight: location.pathname === item.path ? 600 : 400,
-              }}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </Box>
-
-        {/* Search Bar */}
-        {showSearch && (
-          <Box
-            component="form"
-            onSubmit={handleSearch}
-            sx={{ display: { xs: 'none', md: 'flex' }, flexGrow: { md: 0.5 }, maxWidth: 400 }}
+        {/* Left: Logo, branding & menu */}
+        <Box display="flex" alignItems="center" sx={{ gap: 1.5 }}>
+          <IconButton
+            edge="start"
+            color="inherit"
+            onClick={() => setMobileMenuOpen(true)}
+            sx={{ mr: 0.5, display: { xs: 'block', md: onMenuClick ? 'block' : 'none' } }}
           >
-            <TextField
-              fullWidth
-              size="small"
-              placeholder={t('nav.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
+            <MenuIcon />
+          </IconButton>
+          <Box
+            onClick={() => navigate('/')}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
+          >
+            <Box
+              component="img"
+              src={logo}
+              alt="MediLink logo"
               sx={{
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                height: 32,
+                width: 'auto',
                 borderRadius: 1,
-                '& .MuiOutlinedInput-root': {
-                  color: 'white',
-                  '& fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                  },
-                },
-                '& .MuiInputBase-input::placeholder': {
-                  color: 'rgba(255, 255, 255, 0.7)',
-                },
+                bgcolor: 'rgba(255,255,255,0.1)',
+                p: 0.5,
               }}
             />
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1 }}>
+                MediLink
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+                የጤና መረጃ
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Center: Navigation (hidden on dashboard) */}
+        {!isDashboard && (
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 1, ml: 4 }}>
+            {navItems.map((item) => {
+              const label =
+                !item.label || String(item.label).startsWith('nav.')
+                  ? item.fallback
+                  : String(item.label);
+              return (
+                <Button
+                  key={item.path}
+                  color="inherit"
+                  onClick={() => handleNavClick(item.path)}
+                  sx={{
+                    color: location.pathname === item.path ? 'white' : 'rgba(255, 255, 255, 0.9)',
+                    fontWeight: location.pathname === item.path ? 600 : 400,
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  {label}
+                </Button>
+              );
+            })}
           </Box>
         )}
 
-        {/* Right: Actions */}
+        {/* Right: Actions (language, theme, emergency, notifications, user) */}
         <Box display="flex" alignItems="center" gap={1}>
-          {/* Quick Symptom Check (Collapsible) */}
-          {showQuickSymptomCheck && (
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => navigate('/symptom-checker')}
-              sx={{
-                display: { xs: 'none', lg: 'flex' },
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-                color: 'white',
-                '&:hover': {
-                  borderColor: 'white',
-                  bgcolor: 'rgba(255, 255, 255, 0.1)',
-                },
-              }}
-            >
-              {t('nav.quickSymptomCheck')}
-            </Button>
-          )}
-
           {/* Language Selector */}
           <LanguageSelector />
-
-          {/* Theme Toggle */}
-          <IconButton color="inherit" onClick={toggleTheme}>
-            {theme === 'dark' ? <Brightness7 /> : <Brightness4 />}
-          </IconButton>
-
-          {/* Emergency Button */}
-          <IconButton
-            color="error"
-            onClick={() => navigate('/emergency')}
-            sx={{
-              bgcolor: 'rgba(255, 0, 0, 0.2)',
-              '&:hover': { bgcolor: 'rgba(255, 0, 0, 0.3)' },
-            }}
-          >
-            <EmergencyIcon />
-          </IconButton>
 
           {/* Notifications */}
           {isAuthenticated && (
@@ -194,7 +166,7 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
             </IconButton>
           )}
 
-          {/* Auth Buttons / User Menu */}
+          {/* Auth Buttons / User Profile Menu */}
           {!isAuthenticated ? (
             <Box display="flex" gap={1}>
               <Button
@@ -224,7 +196,7 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
             <>
               <IconButton onClick={handleUserMenuClick} color="inherit">
                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.light' }}>
-                  {user?.name?.charAt(0).toUpperCase()}
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
                 </Avatar>
               </IconButton>
               <Menu
@@ -232,16 +204,62 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                 open={Boolean(userMenuAnchor)}
                 onClose={handleUserMenuClose}
               >
-                <MenuItem onClick={() => { handleNavClick('/dashboard'); handleUserMenuClose(); }}>
-                  {t('nav.dashboard')}
-                </MenuItem>
-                <MenuItem onClick={() => { handleNavClick('/profile'); handleUserMenuClose(); }}>
-                  {t('nav.profile')}
+                {/* My Profile header with user name */}
+                <MenuItem disabled>
+                  <Box display="flex" flexDirection="column">
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      👤 My Profile
+                    </Typography>
+                    {user?.name && (
+                      <Typography variant="body2" color="text.secondary">
+                        {user.name}
+                      </Typography>
+                    )}
+                  </Box>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleLogout}>
-                  {t('auth.logout')}
+                <MenuItem
+                  onClick={() => {
+                    handleNavClick('/dashboard');
+                    handleUserMenuClose();
+                  }}
+                >
+                  My Dashboard
                 </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleNavClick('/symptoms');
+                    handleUserMenuClose();
+                  }}
+                >
+                  Health Diary
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleNavClick('/dashboard');
+                    handleUserMenuClose();
+                  }}
+                >
+                  Providers
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleNavClick('/appointments');
+                    handleUserMenuClose();
+                  }}
+                >
+                  Appointments
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleNavClick('/dashboard/profile');
+                    handleUserMenuClose();
+                  }}
+                >
+                  Settings
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
             </>
           )}
@@ -286,4 +304,3 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
     </AppBar>
   );
 };
-

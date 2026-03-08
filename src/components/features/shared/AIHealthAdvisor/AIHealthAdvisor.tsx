@@ -180,11 +180,17 @@ export const AIHealthAdvisor: React.FC<AIHealthAdvisorProps> = ({
             }}
           >
             <Paper
-              elevation={1}
+              elevation={2}
               sx={{
                 p: 2,
                 maxWidth: '70%',
-                backgroundColor: message.role === 'user' ? 'primary.light' : 'background.paper',
+                backgroundColor: message.role === 'user' 
+                  ? 'primary.main' 
+                  : 'background.paper',
+                color: message.role === 'user' ? 'white' : 'text.primary',
+                borderRadius: 3,
+                border: message.role === 'user' ? 'none' : '1px solid',
+                borderColor: message.role === 'user' ? 'transparent' : 'primary.light',
                 position: 'relative',
               }}
             >
@@ -229,16 +235,41 @@ export const AIHealthAdvisor: React.FC<AIHealthAdvisorProps> = ({
         )}
         <div ref={messagesEndRef} />
       </Box>
-      <Box display="flex" gap={1}>
+      <Box display="flex" gap={1} sx={{ mt: 2 }}>
         <TextField
           fullWidth
-          placeholder={t('ai.askQuestion')}
+          placeholder={t('ai.askQuestion') || 'Ask a health question...'}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           disabled={isProcessing}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 3,
+              '&:hover fieldset': {
+                borderColor: 'primary.main',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: 'primary.main',
+              },
+            },
+          }}
         />
-        <IconButton color="primary" onClick={() => handleSend()} disabled={isProcessing || !inputMessage.trim()}>
+        <IconButton 
+          color="primary" 
+          onClick={() => handleSend()} 
+          disabled={isProcessing || !inputMessage.trim()}
+          sx={{
+            bgcolor: 'primary.main',
+            color: 'white',
+            '&:hover': {
+              bgcolor: 'primary.dark',
+            },
+            '&:disabled': {
+              bgcolor: 'action.disabledBackground',
+            },
+          }}
+        >
           <Send />
         </IconButton>
       </Box>

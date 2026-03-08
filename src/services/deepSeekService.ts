@@ -2,8 +2,7 @@ import axios from 'axios';
 import { AIMessage, AIRecommendation, SymptomAnalysis, AIConversation } from '@/types';
 
 // OpenRouter API Configuration
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://medilink.ethiopia';
 const SITE_NAME = 'MediLink Ethiopia';
 
@@ -11,10 +10,11 @@ const SITE_NAME = 'MediLink Ethiopia';
 const DEEPSEEK_API_URL = import.meta.env.VITE_DEEPSEEK_API_URL || 'https://api.deepseek.com/v1';
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || '';
 
+// Use OpenRouter if we have the key (it's the primary method)
 const useOpenRouter = !!OPENROUTER_API_KEY && OPENROUTER_API_KEY !== '';
 
 const openRouterApi = axios.create({
-  baseURL: OPENROUTER_API_URL,
+  baseURL: 'https://openrouter.ai/api/v1',
   headers: {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -31,6 +31,7 @@ const deepSeekApi = axios.create({
   },
 });
 
+// Response interface for both OpenRouter and DeepSeek APIs
 interface DeepSeekResponse {
   choices: Array<{
     message: {
@@ -42,6 +43,9 @@ interface DeepSeekResponse {
   usage?: {
     total_tokens: number;
   };
+  // OpenRouter may include additional fields
+  id?: string;
+  model?: string;
 }
 
 export const deepSeekService = {
@@ -59,9 +63,14 @@ export const deepSeekService = {
         max_tokens: 1000,
       };
 
-      const response = useOpenRouter
-        ? await openRouterApi.post<DeepSeekResponse>('', requestConfig)
-        : await deepSeekApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      let response;
+      if (useOpenRouter) {
+        // Use OpenRouter API
+        response = await openRouterApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      } else {
+        // Fallback to direct DeepSeek API
+        response = await deepSeekApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      }
 
       const content = response.data.choices[0]?.message?.content || 'I apologize, I could not process your request.';
       
@@ -77,6 +86,13 @@ export const deepSeekService = {
       };
     } catch (error: any) {
       console.error('AI Chat Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        useOpenRouter,
+        hasKey: !!OPENROUTER_API_KEY,
+      });
       // Fallback to rule-based response
       return this.getFallbackResponse(message);
     }
@@ -108,9 +124,12 @@ export const deepSeekService = {
         max_tokens: 1500,
       };
 
-      const response = useOpenRouter
-        ? await openRouterApi.post<DeepSeekResponse>('', requestConfig)
-        : await deepSeekApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      let response;
+      if (useOpenRouter) {
+        response = await openRouterApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      } else {
+        response = await deepSeekApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      }
 
       const content = response.data.choices[0]?.message?.content || '';
       const analysis = this.parseSymptomAnalysis(content, symptoms);
@@ -144,9 +163,12 @@ export const deepSeekService = {
         max_tokens: 500,
       };
 
-      const response = useOpenRouter
-        ? await openRouterApi.post<DeepSeekResponse>('', requestConfig)
-        : await deepSeekApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      let response;
+      if (useOpenRouter) {
+        response = await openRouterApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      } else {
+        response = await deepSeekApi.post<DeepSeekResponse>('/chat/completions', requestConfig);
+      }
 
       const content = response.data.choices[0]?.message?.content || '';
       const confidence = this.calculateConfidence(response.data);
@@ -180,12 +202,34 @@ export const deepSeekService = {
   },
 
   buildSystemPrompt(patientContext?: any): string {
-    return `You are a compassionate AI health advisor for MediLink, serving patients in Ethiopia. 
+    const currentPage = patientContext?.currentPage || 'general';
+    let pageContext = '';
+    
+    if (currentPage.includes('/diseases')) {
+      pageContext = 'The user is currently viewing the Disease Library. You can help explain diseases, symptoms, prevention, and treatments.';
+    } else if (currentPage.includes('/symptom-checker')) {
+      pageContext = 'The user is using the Symptom Checker. Help them understand their symptoms and guide them appropriately.';
+    } else if (currentPage.includes('/dashboard')) {
+      pageContext = 'The user is on their health dashboard. Provide personalized advice based on their health data if available.';
+    } else if (currentPage.includes('/medicine-hub')) {
+      pageContext = 'The user is exploring treatments and remedies. Help them understand medical options and traditional medicine.';
+    }
+    
+    return `You are Medi Assistant, a compassionate AI health advisor for MediLink, serving patients in Ethiopia. 
     You provide medical guidance in both English and Amharic. 
     ${patientContext ? `Patient context: Age ${patientContext.age}, Gender ${patientContext.gender}` : ''}
-    Always emphasize that you are an AI assistant and recommend consulting healthcare providers for serious concerns.
-    Be culturally sensitive and aware of local health conditions in Ethiopia.
-    If you detect emergency symptoms, immediately recommend seeking emergency care.`;
+    ${pageContext}
+    
+    IMPORTANT GUIDELINES:
+    - Always emphasize that you are an AI assistant providing general health information
+    - For medical emergencies, immediately direct users to call 911/907 or visit the Emergency page
+    - Recommend consulting healthcare providers for serious concerns and personalized advice
+    - Be culturally sensitive and aware of local health conditions in Ethiopia
+    - If you detect emergency symptoms (chest pain, difficulty breathing, severe bleeding, etc.), immediately recommend seeking emergency care
+    - For symptom analysis, guide users to the Symptom Checker feature
+    - For disease information, direct users to the Disease Library
+    - Be helpful, empathetic, and clear in your responses
+    - If uncertain, recommend consulting with healthcare professionals`;
   },
 
   calculateConfidence(response: DeepSeekResponse): number {
@@ -238,11 +282,52 @@ export const deepSeekService = {
     };
   },
 
-  getFallbackResponse(_message: string): AIMessage {
+  getFallbackResponse(message: string): AIMessage {
+    const lowerMessage = message.toLowerCase();
+    
+    // Detect emergency keywords
+    if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent') || 
+        lowerMessage.includes('critical') || lowerMessage.includes('911') || 
+        lowerMessage.includes('ambulance')) {
+      return {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'For medical emergencies, please:\n\n1. Call 911 or 907 immediately\n2. Visit our Emergency page for comprehensive emergency information\n3. Contact your nearest hospital\n\nI can help you with general health questions, but for urgent situations, please seek immediate professional medical care.',
+        timestamp: new Date().toISOString(),
+        confidence: 0.3,
+      };
+    }
+
+    // Detect symptom-related queries
+    if (lowerMessage.includes('symptom') || lowerMessage.includes('pain') || 
+        lowerMessage.includes('ache') || lowerMessage.includes('fever') ||
+        lowerMessage.includes('headache') || lowerMessage.includes('dizziness')) {
+      return {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'I\'m currently enhancing my medical knowledge. For symptom analysis, I recommend:\n\n• Using our Symptom Checker for detailed symptom tracking\n• Visiting our Disease Library for condition information\n• Consulting with a healthcare provider for proper diagnosis\n\nI can help guide you to the right resources on our platform.',
+        timestamp: new Date().toISOString(),
+        confidence: 0.3,
+      };
+    }
+
+    // Detect disease/condition queries
+    if (lowerMessage.includes('disease') || lowerMessage.includes('condition') || 
+        lowerMessage.includes('illness') || lowerMessage.includes('sick')) {
+      return {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: 'For disease information, please:\n\n• Visit our Disease Library for comprehensive condition details\n• Check symptoms, causes, prevention, and treatment options\n• Use our Symptom Checker if you\'re experiencing symptoms\n\nI can help you navigate to the right information on our platform.',
+        timestamp: new Date().toISOString(),
+        confidence: 0.3,
+      };
+    }
+
+    // Default helpful fallback
     return {
       id: Date.now().toString(),
       role: 'assistant',
-      content: 'I apologize, but I am currently unable to process your request. Please try again later or consult with a healthcare provider for immediate concerns.',
+      content: 'I\'m currently enhancing my medical knowledge to provide better assistance.\n\nFor now, I can help you:\n• Navigate to our Symptom Checker\n• Find disease information in our Disease Library\n• Locate emergency contacts on our Emergency page\n• Guide you to relevant health resources\n\nFor immediate medical concerns, please contact healthcare providers or visit our Emergency page.',
       timestamp: new Date().toISOString(),
       confidence: 0.3,
     };
