@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Box, Card, CardContent, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography, Button } from '@mui/material';
+import { LocalHospital, Phone } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUI } from '@/contexts/UIContext';
@@ -119,8 +120,8 @@ export const PatientDashboard: React.FC = () => {
 
   return (
     <Box sx={{ fontSize: '1.05rem', '& .MuiTypography-body1': { fontSize: '1.05rem' }, '& .MuiTypography-body2': { fontSize: '1rem' }, '& .MuiTypography-h5': { fontSize: '1.35rem' }, '& .MuiTypography-h6': { fontSize: '1.15rem' } }}>
-      <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2 }}>
-        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Card sx={{ borderRadius: { xs: 2, md: 3 }, border: '1px solid', borderColor: 'divider', mb: 2 }}>
+        <CardContent sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, py: { xs: 2, md: 3 }, px: { xs: 2, md: 3 } }}>
           <Box display="flex" alignItems="center" gap={1}>
             <Box>
               <Typography
@@ -128,8 +129,7 @@ export const PatientDashboard: React.FC = () => {
                 fontWeight={900}
                 sx={{ fontSize: { xs: '1.2rem', md: '1.4rem' } }}
               >
-                {isAmharic ? 'ሜድሊንክ': 'MediLink'}
-                
+                {isAmharic ? 'ሜድሊንክ' : 'MediLink'}
               </Typography>
               <Typography
                 variant="body1"
@@ -151,7 +151,7 @@ export const PatientDashboard: React.FC = () => {
           <Typography
             variant="h5"
             fontWeight={800}
-            sx={{ fontSize: { xs: '1.1rem', md: '1.4rem' } }}
+            sx={{ fontSize: { xs: '1.1rem', md: '1.4rem' }, alignSelf: { xs: 'flex-start', md: 'center' } }}
           >
             {sectionTitle}
           </Typography>
@@ -159,6 +159,43 @@ export const PatientDashboard: React.FC = () => {
       </Card>
 
       {renderContent()}
+
+      {/* Emergency information (at bottom) */}
+      <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'error.light', bgcolor: 'error.50', mt: 2 }}>
+        <CardContent sx={{ py: 1.5, px: { xs: 2, md: 3 }, '&:last-child': { pb: 1.5 } }}>
+          <Box display="flex" alignItems="center" flexWrap="wrap" gap={{ xs: 1, sm: 2 }}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <LocalHospital color="error" />
+              <Typography variant="subtitle2" fontWeight={700} color="error.dark">
+                {isAmharic ? 'ድንገተኛ' : 'Emergency'}
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              {isAmharic ? 'ድንገተኛ ለሆነ ጉዳይ ይደውሉ፡ ' : 'For emergencies call: '}
+              <Button
+                size="small"
+                component="a"
+                href="tel:907"
+                startIcon={<Phone />}
+                sx={{ color: 'error.dark', fontWeight: 700, textTransform: 'none', minWidth: 0, p: 0.5 }}
+              >
+                907
+              </Button>
+              {isAmharic ? ' (አምቡላንስ)' : ' (Ambulance)'}
+              {' · '}
+              <Button
+                size="small"
+                component="a"
+                href="tel:911"
+                sx={{ color: 'error.dark', fontWeight: 600, textTransform: 'none', minWidth: 0, p: 0.5 }}
+              >
+                911
+              </Button>
+              {isAmharic ? ' (ፖሊስ)' : ' (Police)'}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
 
       <HamburgerMenu
         activeSection={activeSection}

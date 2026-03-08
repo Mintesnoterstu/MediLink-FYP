@@ -86,9 +86,9 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
         background: 'linear-gradient(135deg, #2C3E50 0%, #4A90E2 100%)',
       }}
     >
-      <Toolbar sx={{ gap: 2 }}>
+      <Toolbar sx={{ gap: { xs: 1, sm: 2 }, minHeight: { xs: 56, md: 64 }, px: { xs: 1, sm: 2 } }}>
         {/* Left: Logo, branding & menu */}
-        <Box display="flex" alignItems="center" sx={{ gap: 1.5 }}>
+        <Box display="flex" alignItems="center" sx={{ gap: 1.5, flexShrink: 0 }}>
           <IconButton
             edge="start"
             color="inherit"
@@ -114,10 +114,10 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
               }}
             />
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1, fontFamily: 'inherit', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                 MediLink
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+              <Typography variant="caption" sx={{ opacity: 0.85, fontFamily: 'inherit' }}>
                 የጤና መረጃ
               </Typography>
             </Box>
@@ -138,6 +138,7 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                   color="inherit"
                   onClick={() => handleNavClick(item.path)}
                   sx={{
+                    fontFamily: 'inherit',
                     color: location.pathname === item.path ? 'white' : 'rgba(255, 255, 255, 0.9)',
                     fontWeight: location.pathname === item.path ? 600 : 400,
                     '&:hover': {
@@ -152,8 +153,8 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
           </Box>
         )}
 
-        {/* Right: Actions (language, theme, emergency, notifications, user) */}
-        <Box display="flex" alignItems="center" gap={1}>
+        {/* Right: Actions - kept on the right when responsive */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, ml: 'auto', flexShrink: 0 }}>
           {/* Language Selector */}
           <LanguageSelector />
 
@@ -168,11 +169,12 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
 
           {/* Auth Buttons / User Profile Menu */}
           {!isAuthenticated ? (
-            <Box display="flex" gap={1}>
+            <Box display="flex" gap={1} flexWrap="nowrap">
               <Button
                 color="inherit"
                 startIcon={<Login />}
                 onClick={() => navigate('/login')}
+                sx={{ fontFamily: 'inherit', minWidth: { xs: 0, sm: 'auto' } }}
               >
                 {t('auth.login')}
               </Button>
@@ -181,8 +183,10 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                 startIcon={<PersonAdd />}
                 onClick={() => navigate('/register')}
                 sx={{
+                  fontFamily: 'inherit',
                   borderColor: 'rgba(255, 255, 255, 0.5)',
                   color: 'white',
+                  minWidth: { xs: 0, sm: 'auto' },
                   '&:hover': {
                     borderColor: 'white',
                     bgcolor: 'rgba(255, 255, 255, 0.1)',

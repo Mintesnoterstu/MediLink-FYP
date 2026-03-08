@@ -25,8 +25,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode; useSidebar?: boole
           <>
             <DashboardMenuProvider>
               <DashboardHeader />
-              <Box sx={{ display: 'flex', flex: 1 }}>
-                <Box component="main" sx={{ flexGrow: 1, p: 3, fontSize: '1.05rem' }}>
+              <Box sx={{ display: 'flex', flex: 1, overflow: 'auto' }}>
+                <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2, md: 3 }, fontSize: '1.05rem', width: '100%', minWidth: 0 }}>
                   {children}
                 </Box>
               </Box>

@@ -276,6 +276,7 @@ export const MedicinePage: React.FC = () => {
                         borderRadius: 3,
                         border: '2px solid',
                         borderColor: '#EEEEEE',
+                        overflow: 'hidden',
                         '&:hover': {
                           boxShadow: 6,
                           borderColor: '#4A90E2',
@@ -284,8 +285,20 @@ export const MedicinePage: React.FC = () => {
                       }}
                       onClick={() => handleRemedyClick(remedy)}
                     >
+                      {/* Image placeholder (backend can supply imageUrl later) */}
+                      <Box
+                        sx={{
+                          height: 120,
+                          bgcolor: 'grey.200',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Healing sx={{ fontSize: 48, color: 'grey.400' }} />
+                      </Box>
                       <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
+                        <Box display="flex" justifyContent="space-between" alignItems="start" mb={1.5}>
                           <Typography variant="h6" fontWeight={600} sx={{ color: '#4A90E2' }}>
                             {dispName}
                           </Typography>
@@ -410,16 +423,43 @@ export const MedicinePage: React.FC = () => {
               </Box>
             </DialogTitle>
             <DialogContent>
+              {/* Image placeholder for remedy (backend can supply imageUrl later) */}
+              <Box
+                sx={{
+                  width: '100%',
+                  height: 180,
+                  bgcolor: 'grey.200',
+                  borderRadius: 2,
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Healing sx={{ fontSize: 64, color: 'grey.400' }} />
+              </Box>
               <Typography variant="body1" paragraph>
                 {getText(selectedRemedy, 'description')}
               </Typography>
 
               {selectedRemedy.culturalContext && (
-                <Box mb={2} p={2} bgcolor="#E8F4F8" borderRadius={2}>
-                  <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                <Box
+                  mb={2}
+                  p={2}
+                  borderRadius={2}
+                  sx={{
+                    bgcolor: 'primary.50',
+                    border: '1px solid',
+                    borderColor: 'primary.100',
+                    color: 'text.primary',
+                  }}
+                >
+                  <Typography variant="subtitle2" fontWeight={700} gutterBottom sx={{ color: 'text.primary' }}>
                     {isAmharic ? 'ባህላዊ አይነት' : 'Cultural Context'}
                   </Typography>
-                  <Typography variant="body2">{getText(selectedRemedy, 'culturalContext')}</Typography>
+                  <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                    {getText(selectedRemedy, 'culturalContext')}
+                  </Typography>
                 </Box>
               )}
 

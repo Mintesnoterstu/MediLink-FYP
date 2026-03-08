@@ -23,7 +23,7 @@ import { useAI } from '@/contexts/AIContext';
 import { useHealthData } from '@/contexts/HealthDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { AIMessage } from '@/types';
 
 interface FloatingChatBotProps {
@@ -82,7 +82,6 @@ const getContextualGreeting = (pathname: string, t: any): string => {
 export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimized = true }) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { patientData } = useHealthData();
   const {
@@ -362,19 +361,7 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                 <Typography variant="caption" component="div">
                   <strong>{t('chat.disclaimerTitle') || 'Medical Disclaimer:'}</strong>
                   <br />
-                  {t('chat.disclaimerText') || 'I am an AI assistant providing general health information. For medical emergencies, contact emergency services immediately. Always consult healthcare professionals for medical advice.'}
-                  <br />
-                  <Button
-                    size="small"
-                    variant="text"
-                    onClick={() => {
-                      navigate('/emergency');
-                      setIsMinimized(true);
-                    }}
-                    sx={{ mt: 1, textTransform: 'none', fontSize: '0.7rem' }}
-                  >
-                    {t('chat.visitEmergencyPage') || '→ Visit Emergency Page for urgent situations'}
-                  </Button>
+                  {t('chat.disclaimerText') || 'I am an AI assistant providing general health information. For medical emergencies, call 907 or contact emergency services immediately. Always consult healthcare professionals for medical advice.'}
                 </Typography>
               </Alert>
             )}

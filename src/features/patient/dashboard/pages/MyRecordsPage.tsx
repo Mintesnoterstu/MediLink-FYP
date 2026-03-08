@@ -34,12 +34,6 @@ export const MyRecordsPage: React.FC = () => {
         {isAmharic ? 'የሕክምና መዝገቦቼ' : 'MY HEALTH RECORDS'}
       </Typography>
 
-      <Alert severity="warning" sx={{ mb: 2 }}>
-        {isAmharic
-          ? '⚠️ የሕክምና መዝገቦችዎን እየተመለከቱ ነው። እነዚህ መዝገቦች በጤና ባለሙያዎች የተጨመሩ ናቸው እና በታካሚዎች በቀጥታ ሊስተካከሉ አይችሉም። ማንኛውም መረጃ የተሳሳተ ነው ብለው ካመኑ፣ እባክዎ “እርማት ይጠይቁ” የሚለውን አዝራር ይጠቀሙ።'
-          : '⚠️ You are viewing your medical records. These records are added by healthcare professionals and cannot be edited directly by patients. If you believe any information is incorrect, please use the "Request Correction" button.'}
-      </Alert>
-
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2 }}>
         <CardContent>
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
@@ -323,6 +317,12 @@ export const MyRecordsPage: React.FC = () => {
         </Button>
         {isAmharic && <Chip sx={{ ml: 1 }} label="እርማት ይጠይቁ" />}
       </Box>
+
+      <Alert severity="warning" sx={{ mt: 2 }}>
+        {isAmharic
+          ? '⚠️ የሕክምና መዝገቦችዎን እየተመለከቱ ነው። እነዚህ መዝገቦች በጤና ባለሙያዎች የተጨመሩ ናቸው እና በታካሚዎች በቀጥታ ሊስተካከሉ አይችሉም። ማንኛውም መረጃ የተሳሳተ ነው ብለው ካመኑ፣ እባክዎ “እርማት ይጠይቁ” የሚለውን አዝራር ይጠቀሙ።'
+          : '⚠️ You are viewing your medical records. These records are added by healthcare professionals and cannot be edited directly by patients. If you believe any information is incorrect, please use the \"Request Correction\" button.'}
+      </Alert>
 
       <Dialog
         open={detailDialog.open}

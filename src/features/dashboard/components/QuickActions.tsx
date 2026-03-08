@@ -99,7 +99,7 @@ export const QuickActions = () => {
                 navigate('/dashboard');
                 break;
             case 'emergency':
-                navigate('/emergency');
+                window.location.href = 'tel:907';
                 break;
             default:
                 console.log('Unknown action:', actionId);

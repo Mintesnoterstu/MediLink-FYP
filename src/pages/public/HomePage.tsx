@@ -7,12 +7,10 @@ import {
   CardContent,
   Container,
   Stack,
-  TextField,
-  Divider,
   Button,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { PrimaryButton, SecondaryButton, EmergencyButton } from '@/components/ui';
+import { PrimaryButton, SecondaryButton } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUI } from '@/contexts/UIContext';
 
@@ -116,38 +114,20 @@ export const HomePage: React.FC = () => {
       ctaAm: 'ተጨማሪ ይወቁ',
       path: '/about',
     },
-    {
-      title: 'Health Library',
-      titleAm: 'የጤና ቤተ-መጻሕፍት',
-      description: 'Articles on prevention, nutrition, and wellness',
-      descriptionAm: 'ስለ መከላከል፣ አመጋገብ እና ጤና መጣጠን መጣጥፎች',
-      cta: 'Read',
-      ctaAm: 'ያንብቡ',
-      path: '/symptom-checker',
-    },
-    {
-      title: 'Emergency',
-      titleAm: 'ድንገተኛ',
-      description: 'Quick access to emergency contacts and hotlines',
-      descriptionAm: 'ፈጣን የድንገተኛ መጠናኛዎች እና የስልክ ቁጥሮች',
-      cta: 'Open',
-      ctaAm: 'ክፈት',
-      path: '/emergency',
-    },
   ];
 
+  const heroTitleText = isAmharic ? 'ሜድሊንክ — ደህን፣ ባለሁለት ቋንቋ፣ በAI የሚሠራ የጤና አገልግሎት' : 'MediLink — Secure, bilingual, AI-powered healthcare';
+  const heroSubtitleText = isAmharic
+    ? 'ለህዝብ መረጃ እና የግል ዳሽቦርድ የተዋሃደ መድረክ። ለታካሚዎች፣ ለአገልግሎት ሰጪዎች እና ለአስተዳዳሪዎች የተዘጋጀ።'
+    : 'Access a unified platform for public resources and personal dashboards. Designed for patients, providers, and administrators.';
+  const getStartedLabel = isAmharic ? 'ጀምር' : 'Get started';
+  const learnMoreLabel = isAmharic ? 'ተጨማሪ ይወቁ' : 'Learn more';
+  const jimmaGlanceLabel = isAmharic ? 'የጅማ ዞን በአጭሩ' : 'Jimma Zone at a Glance';
   const heroStats = [
     { label: 'Woredas', labelAm: 'ወረዳዎች', value: '10' },
     { label: 'Health Facilities', labelAm: 'የጤና ተቋማት', value: '86' },
     { label: 'Health Professionals', labelAm: 'የጤና ባለሙያዎች', value: '456' },
     { label: 'Patients', labelAm: 'ታካሚዎች', value: '234,567+' },
-  ];
-
-  const publicBullets = [
-    { en: 'Explore disease and medicine hubs', am: 'የበሽታ እና መድሀኒት መድረኮችን ያስሱ' },
-    { en: 'Learn about common diseases and their symptoms', am: 'ስለ ተለመዱ በሽታዎች እና ምልክቶቻቸው ይማሩ' },
-    { en: 'Switch between English and Amharic', am: 'በእንግሊዝኛ እና በአማርኛ መካከል ይቀያይሩ' },
-    { en: 'Access emergency information 24/7', am: 'የድንገተኛ መረጃን 24/7 ያግኙ' },
   ];
 
   const dataControlBullets = [
@@ -170,11 +150,20 @@ export const HomePage: React.FC = () => {
         <Container maxWidth="lg">
           <Grid container spacing={6} alignItems="center">
             <Grid item xs={12} md={7}>
-              <Typography variant="h3" component="h1" fontWeight={700} gutterBottom>
-                MediLink — Secure, bilingual, AI-powered healthcare
+              <Typography
+                variant="h2"
+                component="h1"
+                fontWeight={800}
+                gutterBottom
+                sx={{ fontSize: { xs: '2.2rem', sm: '2.6rem', md: '3.1rem' }, lineHeight: 1.15 }}
+              >
+                {heroTitleText}
               </Typography>
-              <Typography variant="h6" sx={{ opacity: 0.9, mb: 4, maxWidth: 720 }}>
-                Access a unified platform for public resources and personal dashboards. Designed for patients, providers, and administrators.
+              <Typography
+                variant="h5"
+                sx={{ opacity: 0.92, mb: 4, maxWidth: 780, fontSize: { xs: '1.15rem', sm: '1.25rem', md: '1.35rem' } }}
+              >
+                {heroSubtitleText}
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <PrimaryButton
@@ -182,14 +171,14 @@ export const HomePage: React.FC = () => {
                   onClick={() => navigate(isAuthenticated ? '/dashboard' : '/register')}
                   sx={{ minWidth: 160 }}
                 >
-                  Get started
+                  {getStartedLabel}
                 </PrimaryButton>
                 <SecondaryButton
                   size="large"
                   onClick={() => navigate('/about')}
                   sx={{ borderColor: 'white', color: 'white' }}
                 >
-                  Learn more
+                  {learnMoreLabel}
                 </SecondaryButton>
               </Stack>
             </Grid>
@@ -204,15 +193,15 @@ export const HomePage: React.FC = () => {
                 }}
               >
                 <Typography variant="h6" fontWeight={600} gutterBottom>
-                  {isAmharic ? 'የጅማ ዞን በአጭሩ' : 'Jimma Zone at a Glance'}
+                  {jimmaGlanceLabel}
                 </Typography>
                 <Grid container spacing={2}>
                   {heroStats.map((item) => (
                     <Grid item xs={6} key={item.label}>
-                      <Typography variant="h4" fontWeight={700}>
+                      <Typography variant="h3" fontWeight={800} sx={{ fontSize: { xs: '1.8rem', sm: '2.1rem' } }}>
                         {item.value}
                       </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                      <Typography variant="body1" sx={{ opacity: 0.9, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
                         {isAmharic ? item.labelAm : item.label}
                       </Typography>
                     </Grid>
@@ -225,15 +214,17 @@ export const HomePage: React.FC = () => {
       </Box>
 
       <Container maxWidth="lg" sx={{ py: 6 }}>
-        {/* Quick access dashboard preview */}
-        <Box sx={{ mb: 6 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Quick access to dashboard services
+        {/* Quick access to dashboard services - compact */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '1.8rem' } }}>
+            {isAmharic ? 'ወደ ዳሽቦርድ አገልግሎቶች ፈጣን መዳረሻ' : 'Quick access to dashboard services'}
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 780 }}>
-            A concise overview of personal and professional tools. Public visitors can browse all resources; authentication is only required for personalized features.
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 2, maxWidth: 780 }}>
+            {isAmharic
+              ? 'የግል እና የሙያ መሣሪያዎች አጭር ግምገማ። ህዝባዊ ጎብኚዎች ሁሉንም መረጃ ማየት ይችላሉ፤ ለግል ባህሪያት ብቻ መግቢያ ያስፈልጋል።'
+              : 'A concise overview of personal and professional tools. Public visitors can browse all resources; login is only required for personalized features.'}
           </Typography>
-          <Grid container spacing={3}>
+          <Grid container spacing={2}>
             {dashboardServices.map((service) => (
               <Grid item xs={12} sm={6} md={4} key={service.title}>
                 <Card
@@ -241,27 +232,20 @@ export const HomePage: React.FC = () => {
                     height: '100%',
                     border: '1px solid',
                     borderColor: 'divider',
-                    borderRadius: 3,
+                    borderRadius: 2,
                     transition: 'all 0.25s ease',
-                    '&:hover': {
-                      boxShadow: 6,
-                      borderColor: 'primary.main',
-                      transform: 'translateY(-6px)',
-                    },
+                    '&:hover': { boxShadow: 4, borderColor: 'primary.main' },
                   }}
                 >
-                  <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                    <Typography variant="subtitle1" fontWeight={700} color="primary.main">
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Typography variant="subtitle1" fontWeight={800} color="primary.main">
                       {isAmharic && service.titleAm ? service.titleAm : service.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                      {isAmharic && service.descriptionAm ? service.descriptionAm : service.description}
                     </Typography>
                     <Button
                       size="small"
                       variant="text"
                       onClick={() => navigate(service.path)}
-                      sx={{ alignSelf: 'flex-start', fontWeight: 600, color: 'primary.main' }}
+                      sx={{ mt: 0.5, fontWeight: 700, color: 'primary.main', p: 0, minHeight: 0, fontSize: '0.95rem' }}
                     >
                       {isAmharic && service.ctaAm ? service.ctaAm : service.cta}
                     </Button>
@@ -272,69 +256,37 @@ export const HomePage: React.FC = () => {
           </Grid>
         </Box>
 
-        {/* Access gateway */}
-        <Grid container spacing={4} sx={{ mb: 6 }}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="h5" fontWeight={700}>
-                  Access your dashboard
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Secure login for personal features. Public resources remain open without authentication.
-                </Typography>
-                <Stack spacing={2}>
-                  <TextField label="Email" type="email" fullWidth />
-                  <TextField label="PIN or Password" type="password" fullWidth />
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <PrimaryButton fullWidth onClick={() => navigate(isAuthenticated ? '/dashboard' : '/login')}>
-                      Login
-                    </PrimaryButton>
-                    <SecondaryButton fullWidth onClick={() => navigate('/register')}>
-                      Create account
-                    </SecondaryButton>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                    * {isAmharic ? 'አዳዲስ ታካሚዎች በመታወቂያ በጤና ተቋም መመዝገብ አለባቸው' : 'New patients must register at a health facility with ID'}
-                  </Typography>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Button size="small" variant="text" onClick={() => navigate('/login')}>
-                      Show PIN pad
-                    </Button>
-                    <Button size="small" variant="text" onClick={() => navigate('/login')}>
-                      Forgot PIN?
-                    </Button>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent>
-                <Typography variant="h6" fontWeight={700} gutterBottom>
-                  Public resources remain open
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  You can review diseases, medicines, and health guidance without logging in. Sign in only when you want to save or track personal data.
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Stack spacing={1.5}>
-                  {publicBullets.map((bullet) => (
-                    <Typography key={bullet.en} variant="body2">
-                      {isAmharic ? `• ${bullet.am}` : `• ${bullet.en}`}
-                    </Typography>
-                  ))}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        {/* Login direction - single card */}
+        <Box sx={{ mb: 6 }}>
+          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}>
+            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 3 }}>
+              <Typography variant="h6" fontWeight={700}>
+                {isAmharic ? 'ዳሽቦርድ አገልግሎቶችን ለማግኘት ይግቡ' : 'Access dashboard services'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                {isAmharic
+                  ? 'የግል መዝገቦች፣ ፈቃድ አስተዳደር እና ቀጠሮዎች ለማግኘት ወደ መግቢያ ገጽ ይሂዱ።'
+                  : 'Sign in to view your records, consent, and appointments.'}
+              </Typography>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <PrimaryButton onClick={() => navigate('/login')} sx={{ minWidth: 140 }}>
+                  {isAmharic ? 'ግባ' : 'Go to Login'}
+                </PrimaryButton>
+                <SecondaryButton onClick={() => navigate('/register')} sx={{ minWidth: 140 }}>
+                  {isAmharic ? 'መለያ ፍጠር' : 'Create account'}
+                </SecondaryButton>
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                * {isAmharic ? 'አዳዲስ ታካሚዎች በጤና ተቋም በመታወቂያ መመዝገብ አለባቸው' : 'New patients must register at a health facility with ID'}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
 
         {/* Public resources */}
         <Box sx={{ mb: 8 }}>
           <Typography variant="h4" fontWeight={700} gutterBottom>
-            Explore our public resources
+            {isAmharic ? 'የህዝብ መረጃዎችን ያስሱ' : 'Explore our public resources'}
           </Typography>
           <Grid container spacing={3}>
             {publicResources.map((resource) => (
@@ -403,10 +355,6 @@ export const HomePage: React.FC = () => {
         </Box>
       </Container>
 
-      {/* Fixed emergency access */}
-      <Box sx={{ position: 'fixed', right: 24, bottom: 24, zIndex: 1200 }}>
-        <EmergencyButton onClick={() => navigate('/emergency')} />
-      </Box>
     </Box>
   );
 };

@@ -10,11 +10,7 @@ import {
   Avatar,
   Divider,
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  LocalHospital as EmergencyIcon,
-  CalendarToday as AppointmentIcon,
-} from '@mui/icons-material';
+import { Menu as MenuIcon } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSelector } from '@/components/features/shared/LanguageSelector/LanguageSelector';
@@ -55,9 +51,9 @@ export const DashboardHeader: React.FC = () => {
         background: 'linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #2b6cb0 100%)',
       }}
     >
-      <Toolbar sx={{ gap: 2 }}>
+      <Toolbar sx={{ gap: { xs: 1, sm: 2 }, minHeight: { xs: 56, md: 64 }, px: { xs: 1, sm: 2 } }}>
         {/* Left: Hamburger + Logo */}
-        <Box display="flex" alignItems="center" sx={{ gap: 1.5 }}>
+        <Box display="flex" alignItems="center" sx={{ gap: 1.5, flexShrink: 0 }}>
           {isPatient && (
             <IconButton edge="start" color="inherit" onClick={openMenu} sx={{ mr: 0.5 }}>
               <MenuIcon />
@@ -92,29 +88,9 @@ export const DashboardHeader: React.FC = () => {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Right: Language, Appointment, Emergency, User */}
-        <Box display="flex" alignItems="center" gap={1}>
+        {/* Right: Language, Appointment, User */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, ml: 'auto', flexShrink: 0 }}>
           <LanguageSelector />
-
-          <IconButton
-            color="inherit"
-            onClick={() => handleNav('/dashboard/appointments')}
-            title="Appointments"
-          >
-            <AppointmentIcon />
-          </IconButton>
-
-          <IconButton
-            color="error"
-            onClick={() => handleNav('/emergency')}
-            sx={{
-              bgcolor: 'rgba(255, 0, 0, 0.2)',
-              '&:hover': { bgcolor: 'rgba(255, 0, 0, 0.3)' },
-            }}
-            title="Emergency"
-          >
-            <EmergencyIcon />
-          </IconButton>
 
           {isAuthenticated && (
             <>
@@ -143,7 +119,7 @@ export const DashboardHeader: React.FC = () => {
                 <Divider />
                 <MenuItem onClick={() => handleNav('/dashboard')}>My Dashboard</MenuItem>
                 <MenuItem onClick={() => handleNav('/symptoms')}>Health Diary</MenuItem>
-                <MenuItem onClick={() => handleNav('/dashboard/appointments')}>Appointments</MenuItem>
+                <MenuItem onClick={() => handleNav('/appointments')}>Appointments</MenuItem>
                 <MenuItem onClick={() => handleNav('/dashboard/profile')}>Settings</MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>

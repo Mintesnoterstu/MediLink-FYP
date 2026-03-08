@@ -16,7 +16,6 @@ import { MedicinePage } from '@/pages/public/MedicinePage';
 import { AboutPage } from '@/pages/public/AboutPage';
 import { LoginPage } from '@/pages/public/LoginPage';
 import { RegisterPage } from '@/pages/public/RegisterPage';
-import { EmergencyPage } from '@/pages/emergency/EmergencyPage';
 import { SymptomChecker as PublicSymptomChecker } from '@/components/features/public/SymptomChecker/SymptomChecker';
 import { SymptomTracker } from '@/components/features/patient/SymptomTracker/SymptomTracker';
 import { MedicationManager } from '@/components/features/patient/MedicationManager/MedicationManager';
@@ -97,14 +96,6 @@ function App() {
                     element={
                       <PublicLayout>
                         <PublicSymptomChecker />
-                      </PublicLayout>
-                    }
-                  />
-                  <Route
-                    path="/emergency"
-                    element={
-                      <PublicLayout>
-                        <EmergencyPage />
                       </PublicLayout>
                     }
                   />

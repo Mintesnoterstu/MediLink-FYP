@@ -25,8 +25,6 @@ import {
   IconButton,
 } from '@mui/material';
 import { Search, LocalHospital, CheckCircle, Clear } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { PrimaryButton } from '@/components/ui';
 import { Disease, DiseaseCategory } from '@/types';
 import { BodyMap } from '@/components/ui/body-map/BodyMap';
 import { useUI } from '@/contexts/UIContext';
@@ -50,7 +48,6 @@ const LABELS = {
   prevention: { en: 'Prevention', am: 'መከላከል' },
   treatment: { en: 'Treatment', am: 'ሕክምና' },
   close: { en: 'Close', am: 'ዝጋ' },
-  addToDiary: { en: 'Add to my health diary', am: 'ወደ ጤና መዝገቤ ጨምር' },
   affectedRegions: { en: 'Affected Body Regions', am: 'የተጎዱ የሰውነት ክፍሎች' },
   seasonalAlert: { en: 'Seasonal Alert', am: 'የወቅት ማሳወቂያ' },
   commonIn: { en: 'Common in', am: 'በተለመደ' },
@@ -60,7 +57,6 @@ const LABELS = {
 };
 
 export const DiseasePage: React.FC = () => {
-  const navigate = useNavigate();
   const { language } = useUI();
   const isAmharic = language === 'am';
   const t = (key: keyof typeof LABELS) => (isAmharic ? LABELS[key].am : LABELS[key].en);
@@ -73,6 +69,7 @@ export const DiseasePage: React.FC = () => {
   const [selectedBodyRegions, setSelectedBodyRegions] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
 
+  // Diseases: mock data for now; more diseases will be loaded from backend/API when available
   const diseases = mockDiseases;
 
   const getText = (d: Disease, field: 'description' | 'symptoms' | 'causes' | 'prevention' | 'treatment' | 'seasonal') => {
@@ -427,10 +424,10 @@ export const DiseasePage: React.FC = () => {
               </Box>
             </DialogTitle>
             <DialogContent>
-              {/* Video placeholder */}
+              {/* Image placeholder for disease (media from backend when available) */}
               <Box sx={{ width: '100%', height: 180, bgcolor: 'grey.200', borderRadius: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Typography variant="body2" color="text.secondary">
-                  {isAmharic ? 'ቪዲዮ ቦታ' : 'Video placeholder'}
+                  {isAmharic ? 'ምስል ቦታ' : 'Image placeholder'}
                 </Typography>
               </Box>
 
@@ -514,14 +511,6 @@ export const DiseasePage: React.FC = () => {
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
               <Button onClick={() => setDialogOpen(false)}>{t('close')}</Button>
-              <PrimaryButton
-                onClick={() => {
-                  setDialogOpen(false);
-                  navigate('/dashboard');
-                }}
-              >
-                {t('addToDiary')}
-              </PrimaryButton>
             </DialogActions>
           </>
         )}
