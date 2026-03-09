@@ -19,7 +19,6 @@ import {
   Minimize,
   Warning,
 } from '@mui/icons-material';
-import { useAI } from '@/contexts/AIContext';
 import { useHealthData } from '@/contexts/HealthDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -84,38 +83,24 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
   const location = useLocation();
   const { user } = useAuth();
   const { patientData } = useHealthData();
-  const {
-    sendMessage,
-    isProcessing,
-    currentConversation,
-    createNewConversation,
-    fallbackMode,
-  } = useAI();
 
   const [isMinimized, setIsMinimized] = useState(initialMinimized);
   const [inputMessage, setInputMessage] = useState('');
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
   const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [fallbackMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  const CHAT_ENDPOINT =
+    import.meta.env.VITE_CHATBOT_API_URL || 'http://localhost:5001/api/chat';
+
   // Initialize conversation on mount
   useEffect(() => {
-    if (!currentConversation && patientData) {
-      createNewConversation(patientData);
-    }
-  }, [currentConversation, patientData, createNewConversation]);
-
-  // Update messages when conversation changes
-  useEffect(() => {
-    if (currentConversation) {
-      setMessages(currentConversation.messages);
-      if (currentConversation.messages.length > 0 && isMinimized) {
-        setHasNewMessage(true);
-      }
-    } else {
-      // Add contextual greeting if no conversation
+    // For now we don't persist conversations to backend; just ensure greeting exists
+    if (messages.length === 0) {
       const greeting: AIMessage = {
         id: 'greeting',
         role: 'assistant',
@@ -124,17 +109,9 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
       };
       setMessages([greeting]);
     }
-  }, [currentConversation, location.pathname, t, isMinimized]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (!isMinimized) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      setHasNewMessage(false);
-    }
-  }, [messages, isMinimized]);
-
-  // Update greeting when route changes
+  // Update contextual greeting when route changes (only if user hasn't already had a conversation)
   useEffect(() => {
     if (messages.length === 0 || (messages.length === 1 && messages[0].id === 'greeting')) {
       const greeting: AIMessage = {
@@ -145,7 +122,37 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
       };
       setMessages([greeting]);
     }
-  }, [location.pathname, t]);
+  }, [location.pathname, t]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (!isMinimized) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setHasNewMessage(false);
+    }
+  }, [messages, isMinimized]);
+
+  const callChatbotApi = async (content: string): Promise<string> => {
+    const payload: Record<string, unknown> = {
+      query: content,
+      // passthrough (not used by backend now but future-proof)
+      userRole: user?.role,
+      currentPage: location.pathname,
+      patientContext: patientData,
+    };
+
+    const res = await fetch(CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Chatbot API error ${res.status}`);
+    }
+    const data = await res.json();
+    return data.answer || '';
+  };
 
   const handleSend = async () => {
     if (!inputMessage.trim() || isProcessing) return;
@@ -162,24 +169,31 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
     setShowDisclaimer(false);
 
     try {
-      const context = {
-        ...patientData,
-        currentPage: location.pathname,
-        userRole: user?.role,
+      setIsProcessing(true);
+      const answer = await callChatbotApi(inputMessage);
+      const botMessage: AIMessage = {
+        id: `${Date.now()}-bot`,
+        role: 'assistant',
+        content:
+          answer ||
+          "I don't know based on this medical book. / በዚህ የሕክምና መጽሐፍ መሠረት አላወቅም።",
+        timestamp: new Date().toISOString(),
       };
-
-      const response = await sendMessage(inputMessage, context);
-      setMessages((prev) => [...prev, response]);
+      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error('Failed to send message:', error);
       const errorMessage: AIMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: t('chat.errorMessage') || 'I apologize, but I encountered an error. Please try again or consult with a healthcare provider for immediate concerns.',
+        content:
+          t('chat.errorMessage') ||
+          'I apologize, but I encountered an error. Please try again or consult with a healthcare provider for immediate concerns.',
         timestamp: new Date().toISOString(),
         confidence: 0.3,
       };
       setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -197,18 +211,34 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
       setMessages((prev) => [...prev, userMessage]);
       setShowDisclaimer(false);
 
-      const context = {
-        ...patientData,
-        currentPage: location.pathname,
-        userRole: user?.role,
-      };
-
-      sendMessage(message, context)
-        .then((response) => {
-          setMessages((prev) => [...prev, response]);
+      setIsProcessing(true);
+      callChatbotApi(message)
+        .then((answer) => {
+          const botMessage: AIMessage = {
+            id: `${Date.now()}-bot`,
+            role: 'assistant',
+            content:
+              answer ||
+              "I don't know based on this medical book. / በዚህ የሕክምና መጽሐፍ መሠረት አላወቅም።",
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, botMessage]);
         })
         .catch((error) => {
           console.error('Failed to send message:', error);
+          const errorMessage: AIMessage = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content:
+              t('chat.errorMessage') ||
+              'I apologize, but I encountered an error. Please try again or consult with a healthcare provider for immediate concerns.',
+            timestamp: new Date().toISOString(),
+            confidence: 0.3,
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        })
+        .finally(() => {
+          setIsProcessing(false);
         });
     }, 100);
   };

@@ -23,6 +23,7 @@ import { AppointmentScheduler } from '@/components/features/patient/AppointmentS
 import { PatientDashboard } from '@/features/patient/dashboard/PatientDashboard';
 import { ProfessionalDashboard } from '@/features/professional/dashboard/ProfessionalDashboard';
 import { AdminDashboard } from '@/features/admin/dashboard/AdminDashboard';
+import { ChatBot } from '@/components/ChatBot';
 import '@/i18n/config';
 
 const RoleBasedDashboard: React.FC = () => {
@@ -112,6 +113,14 @@ function App() {
                     element={
                       <PublicLayout>
                         <RegisterPage />
+                      </PublicLayout>
+                    }
+                  />
+                  <Route
+                    path="/chatbot"
+                    element={
+                      <PublicLayout>
+                        <ChatBot />
                       </PublicLayout>
                     }
                   />
