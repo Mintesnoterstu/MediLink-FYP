@@ -119,13 +119,17 @@ def embed_chunks(chunks: List[str]) -> List[List[float]]:
 
 def detect_language(text: str) -> str:
   """
-  Very simple language heuristic:
-  - If the text contains Ethiopic (Amharic) characters, return 'am'
-  - Otherwise default to 'en'
+  If the text contains Geʽez / Ethiopic script (Amharic, etc.), return 'am'; else 'en'.
+  Covers main Unicode blocks used for Amharic.
   """
   for ch in text:
-    # Ethiopic block: U+1200 – U+137F
-    if "\u1200" <= ch <= "\u137F":
+    o = ord(ch)
+    if (
+      0x1200 <= o <= 0x137F  # Ethiopic
+      or 0x1380 <= o <= 0x139F  # Ethiopic Supplement
+      or 0x2D80 <= o <= 0x2DDF  # Ethiopic Extended
+      or 0xAB00 <= o <= 0xAB2F  # Ethiopic Extended-A
+    ):
       return "am"
   return "en"
 

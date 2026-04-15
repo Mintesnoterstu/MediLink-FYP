@@ -3,7 +3,6 @@ flask-cors
 python-dotenv
 sentence-transformers
 torch
-pinecone-client
+pinecone-client==3.2.2
 pypdf
-google-generativeai
 

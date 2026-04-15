@@ -23,8 +23,11 @@ import {
   Home,
   LocalHospital,
   Login,
-  PersonAdd,
   Info,
+  Dashboard as DashboardIcon,
+  HelpOutline,
+  Settings as SettingsIcon,
+  EventAvailable,
 } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUI } from '@/contexts/UIContext';
@@ -51,11 +54,25 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const isDashboard = location.pathname.startsWith('/dashboard');
+  const role = user?.role;
+  const isAmharic = (useUI().language === 'am');
+
+  const dashboardLabel =
+    role === 'admin'
+      ? (isAmharic ? 'የአስተዳዳሪ ዳሽቦርድ' : 'Admin Dashboard')
+      : role === 'provider'
+      ? (isAmharic ? 'የባለሙያ ዳሽቦርድ' : 'My Dashboard')
+      : (isAmharic ? 'የእኔ ዳሽቦርድ' : 'My Dashboard');
+
+  const dashboardPath = '/dashboard';
+
+  const appointmentsPath =
+    role === 'patient' ? '/dashboard/appointments' : '/dashboard';
 
   const navItems = [
     { label: t('nav.home'), fallback: 'HOME', path: '/', icon: <Home /> },
     { label: t('nav.diseases'), fallback: 'DISEASE INFORMATION', path: '/diseases', icon: <LocalHospital /> },
-    { label: t('nav.medicineHub'), fallback: 'MEDICINE HUB', path: '/medicine-hub', icon: <LocalHospital /> },
+    { label: t('nav.traditional'), fallback: 'MEDICINE HUB', path: '/medicine-hub', icon: <LocalHospital /> },
     { label: t('nav.about'), fallback: 'ABOUT', path: '/about', icon: <Info /> },
   ];
 
@@ -160,10 +177,38 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
 
           {/* Notifications */}
           {isAuthenticated && (
-            <IconButton color="inherit">
+            <IconButton
+              color="inherit"
+              onClick={() => navigate('/dashboard')}
+              aria-label={isAmharic ? 'ማስታወቂያዎች' : 'Notifications'}
+            >
               <Badge badgeContent={unreadCount} color="error">
                 <Notifications />
               </Badge>
+            </IconButton>
+          )}
+
+          {/* Dashboard quick link (all roles) */}
+          {isAuthenticated && (
+            <IconButton
+              color="inherit"
+              onClick={() => navigate(dashboardPath)}
+              aria-label={dashboardLabel}
+              title={dashboardLabel}
+            >
+              <DashboardIcon />
+            </IconButton>
+          )}
+
+          {/* Appointments quick link (patient focused) */}
+          {isAuthenticated && (
+            <IconButton
+              color="inherit"
+              onClick={() => navigate(appointmentsPath)}
+              aria-label={isAmharic ? 'ቀጠሮዎች' : 'Appointments'}
+              title={isAmharic ? 'ቀጠሮዎች' : 'Appointments'}
+            >
+              <EventAvailable />
             </IconButton>
           )}
 
@@ -180,8 +225,8 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
               </Button>
               <Button
                 variant="outlined"
-                startIcon={<PersonAdd />}
-                onClick={() => navigate('/register')}
+                startIcon={<Info />}
+                onClick={() => navigate('/help')}
                 sx={{
                   fontFamily: 'inherit',
                   borderColor: 'rgba(255, 255, 255, 0.5)',
@@ -193,7 +238,7 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                   },
                 }}
               >
-                {t('auth.register')}
+                {isAmharic ? 'መመዝገብ መረጃ' : 'Registration Info'}
               </Button>
             </Box>
           ) : (
@@ -208,60 +253,102 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                 open={Boolean(userMenuAnchor)}
                 onClose={handleUserMenuClose}
               >
-                {/* My Profile header with user name */}
+                {/* Profile header */}
                 <MenuItem disabled>
                   <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle2" fontWeight={600}>
-                      👤 My Profile
+                      {isAmharic ? '👤 መለያ' : '👤 Profile'}
                     </Typography>
                     {user?.name && (
                       <Typography variant="body2" color="text.secondary">
                         {user.name}
                       </Typography>
                     )}
+                    {role && (
+                      <Typography variant="caption" color="text.secondary">
+                        {isAmharic ? 'ሚና፡ ' : 'Role: '}
+                        <strong>{role}</strong>
+                      </Typography>
+                    )}
                   </Box>
                 </MenuItem>
                 <Divider />
+
+                {/* Role-specific menu */}
                 <MenuItem
                   onClick={() => {
-                    handleNavClick('/dashboard');
+                    handleNavClick(dashboardPath);
                     handleUserMenuClose();
                   }}
                 >
-                  My Dashboard
+                  {dashboardLabel}
                 </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleNavClick('/symptoms');
-                    handleUserMenuClose();
-                  }}
-                >
-                  Health Diary
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleNavClick('/dashboard');
-                    handleUserMenuClose();
-                  }}
-                >
-                  Providers
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleNavClick('/appointments');
-                    handleUserMenuClose();
-                  }}
-                >
-                  Appointments
-                </MenuItem>
+
+                {role === 'provider' && (
+                  <MenuItem
+                    onClick={() => {
+                      handleNavClick('/dashboard');
+                      handleUserMenuClose();
+                    }}
+                  >
+                    {isAmharic ? 'የጊዜ ሰሌዳዬ' : 'My Schedule'}
+                  </MenuItem>
+                )}
+
+                {role === 'patient' && (
+                  <MenuItem
+                    onClick={() => {
+                      handleNavClick('/dashboard/profile');
+                      handleUserMenuClose();
+                    }}
+                  >
+                    {isAmharic ? 'መለያዬ' : 'My Profile'}
+                  </MenuItem>
+                )}
+
+                {role !== 'patient' && (
+                  <MenuItem
+                    onClick={() => {
+                      handleNavClick('/dashboard/profile');
+                      handleUserMenuClose();
+                    }}
+                  >
+                    {isAmharic ? 'መለያ' : 'Profile'}
+                  </MenuItem>
+                )}
+
                 <MenuItem
                   onClick={() => {
                     handleNavClick('/dashboard/profile');
                     handleUserMenuClose();
                   }}
                 >
-                  Settings
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <SettingsIcon fontSize="small" />
+                    <span>
+                      {role === 'admin'
+                        ? isAmharic
+                          ? 'የስርዓት ቅንብሮች'
+                          : 'System Settings'
+                        : isAmharic
+                        ? 'ቅንብሮች'
+                        : 'Settings'}
+                    </span>
+                  </Box>
                 </MenuItem>
+
+                <MenuItem
+                  onClick={() => {
+                    handleNavClick('/help');
+                    handleUserMenuClose();
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <HelpOutline fontSize="small" />
+                    <span>{isAmharic ? 'እርዳታ' : 'Help'}</span>
+                  </Box>
+                </MenuItem>
+
                 <Divider />
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>
@@ -297,9 +384,9 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                 <ListItemIcon><Login /></ListItemIcon>
                 <ListItemText primary={t('auth.login')} />
               </ListItem>
-              <ListItem button onClick={() => handleNavClick('/register')}>
-                <ListItemIcon><PersonAdd /></ListItemIcon>
-                <ListItemText primary={t('auth.register')} />
+              <ListItem button onClick={() => handleNavClick('/help')}>
+                <ListItemIcon><Info /></ListItemIcon>
+                <ListItemText primary={isAmharic ? 'መመዝገብ መረጃ' : 'Registration Info'} />
               </ListItem>
             </List>
           )}

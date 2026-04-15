@@ -20,10 +20,13 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelector } from '@/components/features/shared/LanguageSelector/LanguageSelector';
+import { useUI } from '@/contexts/UIContext';
 
 export const Footer: React.FC = () => {
   const { t: _t } = useTranslation();
+  const { language } = useUI();
   const year = new Date().getFullYear();
+  const isAm = language === 'am';
 
   return (
     <Box
@@ -42,20 +45,23 @@ export const Footer: React.FC = () => {
           {/* Quick Links */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Quick Links
+              {isAm ? 'ፈጣን አገናኞች' : 'Quick Links'} / {isAm ? 'Quick Links' : 'ፈጣን አገናኞች'}
             </Typography>
             <Stack spacing={0.5}>
               <Link href="/" color="inherit" underline="hover" variant="body2">
-                Home
+                {isAm ? 'መነሻ' : 'Home'} / {isAm ? 'Home' : 'መነሻ'}
               </Link>
               <Link href="/diseases" color="inherit" underline="hover" variant="body2">
-                Disease Information
+                {isAm ? 'የበሽታ መረጃ' : 'Disease Information'} / {isAm ? 'Disease Information' : 'የበሽታ መረጃ'}
               </Link>
               <Link href="/medicine-hub" color="inherit" underline="hover" variant="body2">
-                Medicine Hub
+                {isAm ? 'የመድሀኒት መድረክ' : 'Medicine Hub'} / {isAm ? 'Medicine Hub' : 'የመድሀኒት መድረክ'}
               </Link>
               <Link href="/about" color="inherit" underline="hover" variant="body2">
-                About Us
+                {isAm ? 'ስለ እኛ' : 'About Us'} / {isAm ? 'About Us' : 'ስለ እኛ'}
+              </Link>
+              <Link href="/help" color="inherit" underline="hover" variant="body2">
+                {isAm ? 'እርዳታ' : 'Help'} / {isAm ? 'Help' : 'እርዳታ'}
               </Link>
             </Stack>
           </Grid>
@@ -63,20 +69,20 @@ export const Footer: React.FC = () => {
           {/* Important Information */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Important Information
+              {isAm ? 'አስፈላጊ መረጃ' : 'Important Information'} / {isAm ? 'Important Information' : 'አስፈላጊ መረጃ'}
             </Typography>
             <Stack spacing={0.5}>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                Privacy Policy
+                {isAm ? 'የግላዊነት መመሪያ' : 'Privacy Policy'} / {isAm ? 'Privacy Policy' : 'የግላዊነት መመሪያ'}
               </Link>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                Terms of Service
+                {isAm ? 'የአገልግሎት ውል' : 'Terms of Service'} / {isAm ? 'Terms of Service' : 'የአገልግሎት ውል'}
               </Link>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                Medical Disclaimer
+                {isAm ? 'የሕክምና ማስታወሻ' : 'Medical Disclaimer'} / {isAm ? 'Medical Disclaimer' : 'የሕክምና ማስታወሻ'}
               </Link>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                Accessibility Statement
+                {isAm ? 'የተደራሽነት መግለጫ' : 'Accessibility Statement'} / {isAm ? 'Accessibility Statement' : 'የተደራሽነት መግለጫ'}
               </Link>
             </Stack>
           </Grid>
@@ -84,23 +90,31 @@ export const Footer: React.FC = () => {
           {/* Contact & University */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Contact
+              {isAm ? 'አግኙን' : 'Contact'} / {isAm ? 'Contact' : 'አግኙን'}
             </Typography>
             <Stack spacing={0.5} mb={2}>
-              <Typography variant="body2">Email: support@medilink.et</Typography>
-              <Typography variant="body2">Emergency Hotline: 907</Typography>
-              <Typography variant="body2">Addis Ababa, Ethiopia</Typography>
+              <Typography variant="body2">
+                {isAm ? 'ኢሜይል' : 'Email'}: support@medilink.et
+              </Typography>
+              <Typography variant="body2">
+                {isAm ? 'ድንገተኛ ስልክ' : 'Emergency Hotline'}: 907
+              </Typography>
+              <Typography variant="body2">
+                {isAm ? 'አዲስ አበባ፣ ኢትዮጵያ' : 'Addis Ababa, Ethiopia'}
+              </Typography>
             </Stack>
             <Typography variant="subtitle2" fontWeight={700}>
-              University Affiliation
+              {isAm ? 'የዩኒቨርሲቲ ግንኙነት' : 'University Affiliation'} / {isAm ? 'University Affiliation' : 'የዩኒቨርሲቲ ግንኙነት'}
             </Typography>
-            <Typography variant="body2">A [University Name] Initiative</Typography>
+            <Typography variant="body2">
+              {isAm ? 'የ[ዩኒቨርሲቲ ስም] ፕሮጀክት' : 'A [University Name] Initiative'}
+            </Typography>
           </Grid>
 
           {/* Social, Apps & Certifications */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Connect
+              {isAm ? 'ግንኙነት' : 'Connect'} / {isAm ? 'Connect' : 'ግንኙነት'}
             </Typography>
             <Box display="flex" gap={1}>
               <IconButton size="small" color="inherit">
@@ -119,7 +133,7 @@ export const Footer: React.FC = () => {
 
             <Box mt={2}>
               <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                Mobile Apps
+                {isAm ? 'የሞባይል መተግበሪያዎች' : 'Mobile Apps'} / {isAm ? 'Mobile Apps' : 'የሞባይል መተግበሪያዎች'}
               </Typography>
               <Stack spacing={1}>
                 <Box
@@ -136,7 +150,7 @@ export const Footer: React.FC = () => {
                   }}
                 >
                   <LocalHospital fontSize="small" />
-                  Google Play (coming)
+                  {isAm ? 'Google Play (በቅርብ)' : 'Google Play (coming)'}
                 </Box>
                 <Box
                   sx={{
@@ -153,14 +167,14 @@ export const Footer: React.FC = () => {
                   }}
                 >
                   <LocalHospital fontSize="small" />
-                  App Store (soon)
+                  {isAm ? 'App Store (በቅርብ)' : 'App Store (soon)'}
                 </Box>
               </Stack>
             </Box>
 
             <Box mt={2}>
               <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                Certifications
+                {isAm ? 'ማረጋገጫዎች' : 'Certifications'} / {isAm ? 'Certifications' : 'ማረጋገጫዎች'}
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
@@ -199,14 +213,23 @@ export const Footer: React.FC = () => {
         >
           <Box>
             <Typography variant="caption" display="block">
-              © {year} MediLink Ethiopia. All rights reserved.
+              © {year} MediLink Ethiopia. {isAm ? 'መብት የተጠበቀ' : 'All rights reserved'}. /{' '}
+              {isAm ? 'All rights reserved' : 'መብት የተጠበቀ'}
             </Typography>
             <Typography variant="caption" display="block" sx={{ opacity: 0.8 }}>
-              For educational purposes only. Always consult a licensed healthcare professional.
+              {isAm
+                ? 'ለትምህርት ብቻ ነው። ሁልጊዜ ከፈቃድ ያለው የጤና ባለሙያ ጋር ያማክሩ።'
+                : 'For educational purposes only. Always consult a licensed healthcare professional.'}
+              {' / '}
+              {isAm
+                ? 'For educational purposes only. Always consult a licensed healthcare professional.'
+                : 'ለትምህርት ብቻ ነው። ሁልጊዜ ከፈቃድ ያለው የጤና ባለሙያ ጋር ያማክሩ።'}
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" gap={1.5}>
-            <Typography variant="caption">Language:</Typography>
+            <Typography variant="caption">
+              {isAm ? 'ቋንቋ' : 'Language'} / {isAm ? 'Language' : 'ቋንቋ'}:
+            </Typography>
             <LanguageSelector />
           </Box>
         </Box>

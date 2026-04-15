@@ -265,12 +265,15 @@ export interface Disease {
   seasonal?: string[];
   seasonalAmharic?: string[];
   bodyRegions: string[];
+  /** YouTube embed URL (e.g. https://www.youtube.com/embed/VIDEO_ID) or watch/shorts URL */
+  videoUrl?: string;
   progressionTimeline?: DiseaseStage[];
   visualAssets?: DiseaseVisuals;
 }
 
 export type DiseaseCategory =
   | 'infectious'
+  | 'silent'
   | 'chronic'
   | 'respiratory'
   | 'maternal-child'

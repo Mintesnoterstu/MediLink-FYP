@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-from pinecone import Pinecone, ServerlessSpec
+import pinecone
 
 from helper import (
   ROOT_DIR,
@@ -32,18 +32,19 @@ DIMENSION = 384
 METRIC = "cosine"
 
 
-def get_pinecone_client() -> Pinecone:
+def init_pinecone() -> None:
   api_key = get_required_env("PINECONE_API_KEY")
-  return Pinecone(api_key=api_key)
+  # For older pinecone-client, environment is required but ignored for serverless
+  pinecone.init(api_key=api_key, environment="us-east-1-aws")
 
 
-def ensure_index(pc: Pinecone) -> None:
-  if INDEX_NAME not in pc.list_indexes().names():
-    pc.create_index(
+def ensure_index() -> None:
+  existing = pinecone.list_indexes()
+  if INDEX_NAME not in existing:
+    pinecone.create_index(
       name=INDEX_NAME,
-      dimension=DIMENSION,
       metric=METRIC,
-      spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+      dimension=DIMENSION,
     )
 
 
@@ -64,9 +65,9 @@ def main() -> None:
   print("[store_index] Embeddings computed.")
 
   print("[store_index] Connecting to Pinecone ...")
-  pc = get_pinecone_client()
-  ensure_index(pc)
-  index = pc.Index(INDEX_NAME)
+  init_pinecone()
+  ensure_index()
+  index = pinecone.Index(INDEX_NAME)
 
   print(f"[store_index] Upserting {len(chunks)} vectors into index '{INDEX_NAME}' ...")
   # Prepare records: (id, vector, metadata)

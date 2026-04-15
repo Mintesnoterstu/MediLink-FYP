@@ -1,0 +1,14 @@
+{
+  "name": "@medilink/database-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PostgreSQL pool, RLS session helpers, and AES-256-GCM encryption for MediLink",
+  "main": "src/index.js",
+  "scripts": {
+    "example": "node examples/usage.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

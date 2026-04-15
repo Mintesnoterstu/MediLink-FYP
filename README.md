@@ -7,7 +7,8 @@ This repository is organized into **frontend** and **backend** folders.
 ```
 medl/
 ├── frontend/           # React + Vite + TypeScript UI
-├── backend/            # Backend services (to be implemented)
+├── backend/            # Backend services (chatbot in backend/chatbot)
+├── database/           # PostgreSQL migrations, seeds, Node DB client (see database/README.md)
 ├── .env                # Environment variables (kept at repo root)
 └── data/               # Local data files (kept at repo root)
 ```
@@ -50,13 +51,15 @@ Files:
 - `backend/chatbot/helper.py` — utilities (PDF loading, text splitting, embeddings, env loading)
 - `backend/chatbot/prompt.py` — English + Amharic system prompts
 - `backend/chatbot/store_index.py` — one-time script to index the medical PDF into Pinecone
-- `backend/chatbot/app.py` — Flask API (`/api/chat`) for the chatbot
+- `backend/chatbot/app.py` — Flask API (`/api/chat`) for the chatbot (cross-lingual RAG: Amharic → English for retrieval, answer in Amharic)
+- `backend/chatbot/translation.py` — DeepSeek translation step for retrieval queries
+- `backend/chatbot/llm_client.py` — shared DeepSeek HTTP client
 - `backend/chatbot/requirements.txt` — Python dependencies
 
 Expected data and env:
 
 - PDF: `data/medical-book.pdf`
-- Env (root): `.env` with `PINECONE_API_KEY` and `OPENAI_API_KEY`
+- Env (root): `.env` with `PINECONE_API_KEY`, `DEEPSEEK_API_KEY` (Flask RAG chat), and `VITE_DEEPSEEK_API_KEY` (same value, for Vite client AI helpers)
 
 #### Setup steps
 

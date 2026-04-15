@@ -10,19 +10,29 @@ import {
   Avatar,
   Divider,
 } from '@mui/material';
-import { Menu as MenuIcon } from '@mui/icons-material';
+import { Menu as MenuIcon, Dashboard as DashboardIcon, HelpOutline, Settings as SettingsIcon, EventAvailable } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSelector } from '@/components/features/shared/LanguageSelector/LanguageSelector';
 import { useDashboardMenu } from '@/features/patient/dashboard/context/DashboardMenuContext';
 import logo from '@/assets/logo.png';
+import { useUI } from '@/contexts/UIContext';
 
 export const DashboardHeader: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { language } = useUI();
   const navigate = useNavigate();
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const isPatient = user?.role === 'patient';
   const { openMenu } = useDashboardMenu();
+  const isAmharic = language === 'am';
+  const handleDrawerOpen = () => {
+    if (isPatient) {
+      openMenu();
+      return;
+    }
+    window.dispatchEvent(new CustomEvent('open-role-dashboard-menu'));
+  };
 
   const handleUserMenuClick = (event: React.MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
@@ -43,6 +53,14 @@ export const DashboardHeader: React.FC = () => {
     handleUserMenuClose();
   };
 
+  const role = user?.role;
+  const dashboardLabel =
+    role === 'admin'
+      ? (isAmharic ? 'የአስተዳዳሪ ዳሽቦርድ' : 'Admin Dashboard')
+      : role === 'provider'
+      ? (isAmharic ? 'የባለሙያ ዳሽቦርድ' : 'My Dashboard')
+      : (isAmharic ? 'የእኔ ዳሽቦርድ' : 'My Dashboard');
+
   return (
     <AppBar
       position="sticky"
@@ -54,8 +72,8 @@ export const DashboardHeader: React.FC = () => {
       <Toolbar sx={{ gap: { xs: 1, sm: 2 }, minHeight: { xs: 56, md: 64 }, px: { xs: 1, sm: 2 } }}>
         {/* Left: Hamburger + Logo */}
         <Box display="flex" alignItems="center" sx={{ gap: 1.5, flexShrink: 0 }}>
-          {isPatient && (
-            <IconButton edge="start" color="inherit" onClick={openMenu} sx={{ mr: 0.5 }}>
+          {isAuthenticated && (
+            <IconButton edge="start" color="inherit" onClick={handleDrawerOpen} sx={{ mr: 0.5 }}>
               <MenuIcon />
             </IconButton>
           )}
@@ -94,6 +112,17 @@ export const DashboardHeader: React.FC = () => {
 
           {isAuthenticated && (
             <>
+              <IconButton color="inherit" onClick={() => navigate('/dashboard')} title={dashboardLabel} aria-label={dashboardLabel}>
+                <DashboardIcon />
+              </IconButton>
+              <IconButton
+                color="inherit"
+                onClick={() => navigate(role === 'patient' ? '/dashboard/appointments' : '/dashboard')}
+                title={isAmharic ? 'ቀጠሮዎች' : 'Appointments'}
+                aria-label={isAmharic ? 'ቀጠሮዎች' : 'Appointments'}
+              >
+                <EventAvailable />
+              </IconButton>
               <IconButton onClick={handleUserMenuClick} color="inherit">
                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.light' }}>
                   {user?.name?.charAt(0).toUpperCase() || 'U'}
@@ -107,20 +136,52 @@ export const DashboardHeader: React.FC = () => {
                 <MenuItem disabled>
                   <Box display="flex" flexDirection="column">
                     <Typography variant="subtitle2" fontWeight={600}>
-                      👤 My Profile
+                      {isAmharic ? '👤 መለያ' : '👤 Profile'}
                     </Typography>
                     {user?.name && (
                       <Typography variant="body2" color="text.secondary">
                         {user.name}
                       </Typography>
                     )}
+                    {role && (
+                      <Typography variant="caption" color="text.secondary">
+                        {isAmharic ? 'ሚና፡ ' : 'Role: '}
+                        <strong>{role}</strong>
+                      </Typography>
+                    )}
                   </Box>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={() => handleNav('/dashboard')}>My Dashboard</MenuItem>
-                <MenuItem onClick={() => handleNav('/symptoms')}>Health Diary</MenuItem>
-                <MenuItem onClick={() => handleNav('/appointments')}>Appointments</MenuItem>
-                <MenuItem onClick={() => handleNav('/dashboard/profile')}>Settings</MenuItem>
+
+                <MenuItem onClick={() => handleNav('/dashboard')}>{dashboardLabel}</MenuItem>
+
+                {role === 'provider' && (
+                  <MenuItem onClick={() => handleNav('/dashboard')}>
+                    {isAmharic ? 'የጊዜ ሰሌዳዬ' : 'My Schedule'}
+                  </MenuItem>
+                )}
+
+                <MenuItem onClick={() => handleNav('/dashboard/profile')}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <SettingsIcon fontSize="small" />
+                    <span>
+                      {role === 'admin'
+                        ? isAmharic
+                          ? 'የስርዓት ቅንብሮች'
+                          : 'System Settings'
+                        : isAmharic
+                        ? 'ቅንብሮች'
+                        : 'Settings'}
+                    </span>
+                  </Box>
+                </MenuItem>
+
+                <MenuItem onClick={() => handleNav('/help')}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <HelpOutline fontSize="small" />
+                    <span>{isAmharic ? 'እርዳታ' : 'Help'}</span>
+                  </Box>
+                </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>

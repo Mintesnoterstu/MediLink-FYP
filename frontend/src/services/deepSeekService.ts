@@ -1,17 +1,15 @@
 import axios from 'axios';
 import { AIMessage, AIRecommendation, SymptomAnalysis, AIConversation } from '@/types';
 
-// OpenRouter API Configuration
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
+// OpenRouter (optional): set VITE_OPENROUTER_API_KEY in root .env when using envDir parent
+const OPENROUTER_API_KEY = (import.meta.env.VITE_OPENROUTER_API_KEY || '').trim();
 const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://medilink.ethiopia';
 const SITE_NAME = 'MediLink Ethiopia';
 
-// Fallback to DeepSeek direct API if OpenRouter key not available
 const DEEPSEEK_API_URL = import.meta.env.VITE_DEEPSEEK_API_URL || 'https://api.deepseek.com/v1';
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || '';
+const DEEPSEEK_API_KEY = (import.meta.env.VITE_DEEPSEEK_API_KEY || '').trim();
 
-// Use OpenRouter if we have the key (it's the primary method)
-const useOpenRouter = !!OPENROUTER_API_KEY && OPENROUTER_API_KEY !== '';
+const useOpenRouter = OPENROUTER_API_KEY.length > 0;
 
 const openRouterApi = axios.create({
   baseURL: 'https://openrouter.ai/api/v1',

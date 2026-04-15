@@ -13,7 +13,6 @@ import {
   Button,
 } from '@mui/material';
 import {
-  SmartToy,
   Send,
   Close,
   Minimize,
@@ -24,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { AIMessage } from '@/types';
+import logo from '@/assets/logo.png';
 
 interface FloatingChatBotProps {
   initialMinimized?: boolean;
@@ -97,19 +97,58 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
   const CHAT_ENDPOINT =
     import.meta.env.VITE_CHATBOT_API_URL || 'http://localhost:5001/api/chat';
 
+  const clearHistory = () => {
+    const greeting: AIMessage = {
+      id: 'greeting',
+      role: 'assistant',
+      content: getContextualGreeting(location.pathname, t),
+      timestamp: new Date().toISOString(),
+    };
+    setMessages([greeting]);
+    try {
+      const storageKey = `medilink.chat_history.v1.${user?.id || 'anon'}`;
+      localStorage.removeItem(storageKey);
+    } catch (_e) {
+      // ignore
+    }
+  };
+
   // Initialize conversation on mount
   useEffect(() => {
-    // For now we don't persist conversations to backend; just ensure greeting exists
-    if (messages.length === 0) {
-      const greeting: AIMessage = {
-        id: 'greeting',
-        role: 'assistant',
-        content: getContextualGreeting(location.pathname, t),
-        timestamp: new Date().toISOString(),
-      };
-      setMessages([greeting]);
+    const storageKey = `medilink.chat_history.v1.${user?.id || 'anon'}`;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as AIMessage[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed.slice(-50));
+          return;
+        }
+      }
+    } catch (_e) {
+      // ignore
     }
+
+    const greeting: AIMessage = {
+      id: 'greeting',
+      role: 'assistant',
+      content: getContextualGreeting(location.pathname, t),
+      timestamp: new Date().toISOString(),
+    };
+    setMessages([greeting]);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist chat history locally per user
+  useEffect(() => {
+    const storageKey = `medilink.chat_history.v1.${user?.id || 'anon'}`;
+    try {
+      if (messages.length > 0) {
+        localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50)));
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }, [messages, user?.id]);
 
   // Update contextual greeting when route changes (only if user hasn't already had a conversation)
   useEffect(() => {
@@ -295,7 +334,12 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               overlap="circular"
               anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-              <SmartToy sx={{ color: 'white', fontSize: 32 }} />
+              <Box
+                component="img"
+                src={logo}
+                alt="MediLink"
+                sx={{ width: 36, height: 36, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.15)', p: 0.5 }}
+              />
             </Badge>
           </Paper>
         </Box>
@@ -342,7 +386,12 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               }}
             >
               <Box display="flex" alignItems="center" gap={1}>
-                <SmartToy />
+                <Box
+                  component="img"
+                  src={logo}
+                  alt="MediLink"
+                  sx={{ width: 24, height: 24, borderRadius: 0.75, bgcolor: 'rgba(255,255,255,0.15)', p: 0.25 }}
+                />
                 <Typography variant="h6" fontWeight={600}>
                   {t('chat.title') || 'Medi Assistant'}
                 </Typography>
@@ -454,7 +503,12 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                       borderColor: 'primary.light',
                     }}
                   >
-                    <CircularProgress size={16} />
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <CircularProgress size={16} />
+                      <Typography variant="body2" color="text.secondary">
+                        {t('chat.typing') || 'Typing…'}
+                      </Typography>
+                    </Box>
                   </Paper>
                 </Box>
               )}
@@ -502,6 +556,25 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                 borderColor: 'divider',
               }}
             >
+              <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  {t('chat.suggestions') || 'Suggestions:'}
+                </Typography>
+                <Button size="small" variant="text" color="warning" onClick={clearHistory}>
+                  {t('chat.clearHistory') || 'Clear'}
+                </Button>
+              </Box>
+              <Box display="flex" flexWrap="wrap" gap={0.5} sx={{ mb: 1 }}>
+                {getQuickActions(location.pathname, t).slice(0, 2).map((a) => (
+                  <Chip
+                    key={a.label}
+                    label={a.label}
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleQuickAction(a.message)}
+                  />
+                ))}
+              </Box>
               <Box display="flex" gap={1}>
                 <TextField
                   fullWidth

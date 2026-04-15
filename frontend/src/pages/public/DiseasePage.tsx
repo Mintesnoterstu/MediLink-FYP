@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -29,9 +29,11 @@ import { Disease, DiseaseCategory } from '@/types';
 import { BodyMap } from '@/components/ui/body-map/BodyMap';
 import { useUI } from '@/contexts/UIContext';
 import { mockDiseases } from '@/data/diseasesData';
+import { DiseaseSymptomsVideoSection } from '@/components/features/public/DiseaseLibrary/DiseaseSymptomsVideoSection';
 
 const diseaseCategories: Array<{ value: DiseaseCategory | 'all'; label: string; labelAm: string }> = [
   { value: 'all', label: 'All', labelAm: 'ሁሉም' },
+  { value: 'silent', label: 'Silent Diseases', labelAm: 'ድብቅ በሽታዎች' },
   { value: 'chronic', label: 'Chronic Diseases', labelAm: 'ሥር የሰደዱ በሽታዎች' },
   { value: 'infectious', label: 'Infectious Diseases', labelAm: 'ተላላፊ በሽታዎች' },
   { value: 'autoimmune', label: 'Autoimmune Diseases', labelAm: 'ራስን በራስ የሚከላከሉ በሽታዎች' },
@@ -68,6 +70,7 @@ export const DiseasePage: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedBodyRegions, setSelectedBodyRegions] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [visibleCount, setVisibleCount] = useState(9);
 
   // Diseases: mock data for now; more diseases will be loaded from backend/API when available
   const diseases = mockDiseases;
@@ -163,6 +166,11 @@ export const DiseasePage: React.FC = () => {
       .sort((a, b) => b.match.score - a.match.score)
       .map(({ disease, match }) => ({ ...disease, match }));
   }, [diseases, categoryFilter, searchQuery, selectedBodyRegions, selectedSymptoms, isAmharic]);
+
+  // Reset pagination whenever filters/search change
+  useEffect(() => {
+    setVisibleCount(9);
+  }, [categoryFilter, searchQuery, selectedBodyRegions, selectedSymptoms, isAmharic]);
 
   const handleDiseaseClick = (disease: Disease) => {
     setSelectedDisease(disease);
@@ -356,7 +364,7 @@ export const DiseasePage: React.FC = () => {
           </Paper>
         ) : (
           <Grid container spacing={3}>
-            {filteredDiseases.map((disease: Disease & { match?: { score: number; reasons: string[] } }) => {
+            {filteredDiseases.slice(0, visibleCount).map((disease: Disease & { match?: { score: number; reasons: string[] } }) => {
               const dispName = isAmharic && disease.nameAmharic ? disease.nameAmharic : disease.name;
               const dispDesc = getText(disease, 'description');
               const dispSymptoms = Array.isArray(getText(disease, 'symptoms')) ? getText(disease, 'symptoms') as string[] : [];
@@ -408,6 +416,18 @@ export const DiseasePage: React.FC = () => {
                 </Grid>
               );
             })}
+            {visibleCount < filteredDiseases.length && (
+              <Grid item xs={12}>
+                <Box display="flex" justifyContent="center" mt={2}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => setVisibleCount((c) => Math.min(filteredDiseases.length, c + 9))}
+                  >
+                    {isAmharic ? 'ተጨማሪ አሳይ' : 'Load more'}
+                  </Button>
+                </Box>
+              </Grid>
+            )}
           </Grid>
         )}
       </Box>
@@ -424,16 +444,30 @@ export const DiseasePage: React.FC = () => {
               </Box>
             </DialogTitle>
             <DialogContent>
-              {/* Image placeholder for disease (media from backend when available) */}
-              <Box sx={{ width: '100%', height: 180, bgcolor: 'grey.200', borderRadius: 2, mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {isAmharic ? 'ምስል ቦታ' : 'Image placeholder'}
-                </Typography>
-              </Box>
+              {!selectedDisease.videoUrl && (
+                <Box
+                  sx={{
+                    width: '100%',
+                    height: 180,
+                    bgcolor: 'grey.200',
+                    borderRadius: 2,
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    {isAmharic ? 'ምስል ቦታ' : 'Image placeholder'}
+                  </Typography>
+                </Box>
+              )}
 
               <Typography variant="body1" paragraph sx={{ lineHeight: 1.7 }}>
                 {getText(selectedDisease, 'description')}
               </Typography>
+
+              <DiseaseSymptomsVideoSection videoUrl={selectedDisease.videoUrl} />
 
               <Typography variant="subtitle1" fontWeight={700} gutterBottom mt={2} sx={{ color: '#4A90E2' }}>
                 {t('symptoms')}
