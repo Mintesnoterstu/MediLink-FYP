@@ -16,17 +16,36 @@ The application includes mock authentication for development/testing purposes. U
 - **Role:** Healthcare Provider
 - **Access:** Provider Dashboard, Patient Finder, Medical Records Viewer, Consent Manager
 
-### Admin Account
+### Zonal Admin Account
 - **Email:** `admin@medilink.test`
 - **Password:** `admin123`
-- **Role:** Administrator
+- **Role:** Administrator (Zonal)
 - **Access:** System Analytics, User Management, Content Curator
+
+### Woreda Admin Account
+- **Email:** `woredaadmin@medilink.test`
+- **Password:** `admin123`
+- **Role:** Administrator (Woreda)
+- **Access:** Facility Management, Woreda-level admin workflow
+
+### City Admin Account
+- **Email:** `cityadmin@medilink.test`
+- **Password:** `admin123`
+- **Role:** Administrator (City)
+- **Access:** City-level facility and admin workflow
+
+### Facility Admin Account
+- **Email:** `facilityadmin@medilink.test`
+- **Password:** `admin123`
+- **Role:** Administrator (Facility)
+- **Access:** Professional Management, Patient Registration
 
 ## Notes
 
 - These credentials work in **development mode** only (when `VITE_API_BASE_URL` is not set)
 - In production, you'll need to register accounts through the registration form or use your backend API
 - All test accounts use English (`en`) as the default language
+- Available mock login accounts come from `src/features/auth/services/authService.ts`
 - You can also register new accounts using the registration form at `/register`
 
 ## Quick Start

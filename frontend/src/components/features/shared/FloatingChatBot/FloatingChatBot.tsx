@@ -32,6 +32,17 @@ interface FloatingChatBotProps {
   initialMinimized?: boolean;
 }
 
+const quickSuggestions = (isAmharic: boolean) => [
+  {
+    label: isAmharic ? 'ወባ ምንድን ነው?' : 'What is malaria?',
+    message: 'What is malaria?',
+  },
+  {
+    label: isAmharic ? 'የስኳር በሽታ ምልክቶች?' : 'Symptoms of diabetes?',
+    message: 'Symptoms of diabetes?',
+  },
+];
+
 
 export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimized = true }) => {
   const { t, i18n } = useTranslation();
@@ -208,6 +219,10 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
     setTimeout(() => {
       handleSend();
     }, 0);
+  };
+
+  const handleQuickAction = (message: string) => {
+    setInputMessage(message);
   };
 
   return (
@@ -520,6 +535,18 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                 <Button size="small" variant="text" color="warning" onClick={clearHistory}>
                   {isAmharic ? 'አጥፋ' : 'Clear'}
                 </Button>
+              </Box>
+              <Box display="flex" flexWrap="wrap" gap={0.75} sx={{ mb: 1 }}>
+                {quickSuggestions(isAmharic).map((item) => (
+                  <Chip
+                    key={item.label}
+                    label={item.label}
+                    size="small"
+                    variant="outlined"
+                    onClick={() => handleQuickAction(item.message)}
+                    sx={{ borderRadius: 2 }}
+                  />
+                ))}
               </Box>
               <Box display="flex" gap={1}>
                 <TextField
