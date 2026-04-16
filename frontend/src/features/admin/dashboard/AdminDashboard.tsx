@@ -563,9 +563,26 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Button variant="outlined" fullWidth sx={{ height: '100%' }}>
-                    {isAmharic ? '📎 ፊት/ኋላ ስቀል' : '📎 UPLOAD FRONT/BACK'}
-                  </Button>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      fullWidth
+                      sx={{ height: '100%' }}
+                    >
+                      {isAmharic ? '📎 ፋይል ስቀል (አማራጭ)' : '📎 UPLOAD FILE (OPTIONAL)'}
+                      <input
+                        type="file"
+                        hidden
+                        accept=".pdf,.txt,.doc,.docx,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      />
+                    </Button>
+                    <Typography variant="caption" color="text.secondary">
+                      {isAmharic
+                        ? 'አማራጭ ነው። የሚፈቀዱ ፋይሎች: PDF, Word, TXT'
+                        : 'Optional. Allowed files: PDF, Word, TXT'}
+                    </Typography>
+                  </Box>
                 </Grid>
               </Grid>
 
