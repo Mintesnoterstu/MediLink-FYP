@@ -150,6 +150,9 @@ export interface AIMessage {
   content: string;
   timestamp: string;
   confidence?: number;
+  // Optional UI metadata for chatbot
+  isError?: boolean;
+  retryPayload?: string;
 }
 
 // Appointment Types

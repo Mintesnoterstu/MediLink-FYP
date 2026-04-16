@@ -29,6 +29,8 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   Home,
@@ -61,6 +63,21 @@ export const AdminDashboard: React.FC = () => {
   const adminLevel = (user as any)?.adminLevel || 'facility'; // 'zonal' | 'woreda' | 'city' | 'facility'
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
+  const [snackbar, setSnackbar] = React.useState<{
+    open: boolean;
+    severity: 'success' | 'info' | 'warning' | 'error';
+    message: string;
+  }>({ open: false, severity: 'info', message: '' });
+  const [createLevel, setCreateLevel] = React.useState(
+    adminLevel === 'zonal'
+      ? 'woreda'
+      : adminLevel === 'woreda' || adminLevel === 'city'
+      ? 'facility'
+      : 'none'
+  );
+  const [newAdminName, setNewAdminName] = React.useState('');
+  const [newAdminEmail, setNewAdminEmail] = React.useState('');
+  const [newAdminPhone, setNewAdminPhone] = React.useState('');
 
   const roleLabel = adminLevel === 'zonal'
     ? (isAmharic ? 'የዞን አስተዳዳሪ' : 'Zonal Admin')
@@ -119,7 +136,7 @@ export const AdminDashboard: React.FC = () => {
       en: 'Audit Logs',
       am: 'የኦዲት መዝገብ',
       icon: <Assignment />,
-      onClick: () => setTab(0),
+      onClick: () => setTab(6),
       visible: true,
     },
     { id: 'settings', en: 'Settings', am: 'ቅንብሮች', icon: <Settings />, onClick: () => setTab(5), visible: true },
@@ -139,6 +156,25 @@ export const AdminDashboard: React.FC = () => {
     fn();
   };
 
+  const toast = (severity: typeof snackbar.severity, message: string) => {
+    setSnackbar({ open: true, severity, message });
+  };
+
+  const handleCreateAdmin = () => {
+    if (adminLevel === 'facility') {
+      toast('warning', isAmharic ? 'በዚህ ደረጃ ላይ አዲስ አስተዳዳሪ መፍጠር አይፈቀድም።' : 'Creating new admins is not allowed at this level.');
+      return;
+    }
+    if (!createLevel || createLevel === 'none' || !newAdminName.trim() || !newAdminEmail.trim() || !newAdminPhone.trim()) {
+      toast('warning', isAmharic ? 'እባክዎ ሁሉንም አስፈላጊ መረጃ ያስገቡ።' : 'Please fill all required fields.');
+      return;
+    }
+    toast('success', isAmharic ? 'አስተዳዳሪ በተሳካ ሁኔታ ተፈጥሯል (Mock).' : 'Admin created successfully (Mock).');
+    setNewAdminName('');
+    setNewAdminEmail('');
+    setNewAdminPhone('');
+  };
+
   React.useEffect(() => {
     // Open "System Settings" when header menu goes to /dashboard/profile
     // (Admin dashboard itself is mounted on /dashboard/*; menu links already point there.)
@@ -152,7 +188,7 @@ export const AdminDashboard: React.FC = () => {
   }, []);
 
   return (
-    <Box>
+    <Box sx={{ px: { xs: 1, md: 2 }, pb: 6 }}>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={800} gutterBottom sx={{ mb: 0 }}>
@@ -170,103 +206,108 @@ export const AdminDashboard: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Important notice */}
-      <Card
-        sx={{
-          mb: 3,
-          borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'warning.light',
-          bgcolor: 'warning.50',
-        }}
-      >
-        <CardContent>
-          <Typography variant="subtitle1" fontWeight={800} gutterBottom>
-            {isAmharic ? '⚠️ በአካል መገኘት ያስፈልጋል' : '⚠️ IN-PERSON REGISTRATION REQUIRED'}
-          </Typography>
-          <Typography variant="body2">
-            {isAmharic
-              ? 'ታካሚው ከዋናው መታወቂያ ሰነድ ጋር መገኘት አለበት።'
-              : 'Patient must be present with original ID document.'}
-          </Typography>
-          <Typography variant="body2">
-            {isAmharic
-              ? 'ከመቀጠልዎ በፊት ማንነትን ያረጋግጡ።'
-              : 'Verify identity before proceeding.'}
-          </Typography>
-          <Typography variant="body2">
-            {isAmharic
-              ? 'የመታወቂያ ሰነዱን ይቃኙ ወይም ፎቶ ያንሱ።'
-              : 'Scan or photograph the ID document.'}
-          </Typography>
-        </CardContent>
-      </Card>
+      {/* Dashboard notices + topline stats: only on main statistics tab */}
+      {tab === 0 && (
+        <>
+          {/* Important notice */}
+          <Card
+            sx={{
+              mb: 3,
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'warning.light',
+              bgcolor: 'warning.50',
+            }}
+          >
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={800} gutterBottom>
+                {isAmharic ? '⚠️ በአካል መገኘት ያስፈልጋል' : '⚠️ IN-PERSON REGISTRATION REQUIRED'}
+              </Typography>
+              <Typography variant="body2">
+                {isAmharic
+                  ? 'ታካሚው ከዋናው መታወቂያ ሰነድ ጋር መገኘት አለበት።'
+                  : 'Patient must be present with original ID document.'}
+              </Typography>
+              <Typography variant="body2">
+                {isAmharic
+                  ? 'ከመቀጠልዎ በፊት ማንነትን ያረጋግጡ።'
+                  : 'Verify identity before proceeding.'}
+              </Typography>
+              <Typography variant="body2">
+                {isAmharic
+                  ? 'የመታወቂያ ሰነዱን ይቃኙ ወይም ፎቶ ያንሱ።'
+                  : 'Scan or photograph the ID document.'}
+              </Typography>
+            </CardContent>
+          </Card>
 
-      {/* Core rule: admins never see patient medical data */}
-      <Card sx={{ mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'info.light', bgcolor: 'info.50' }}>
-        <CardContent>
-          <Typography variant="subtitle2" fontWeight={900} gutterBottom>
-            {isAmharic ? '🔒 ዋና ደንብ' : '🔒 Core Rule'}
-          </Typography>
-          <Typography variant="body2">
-            {isAmharic
-              ? 'ማንኛውም አስተዳዳሪ የታካሚ የሕክምና መረጃ ማየት አይችልም። የሚታዩ ቁጥሮች/ስታቲስቲክስ ብቻ ናቸው።'
-              : 'No admin can view patient medical data. Admin dashboards show anonymous statistics only.'}
-          </Typography>
-        </CardContent>
-      </Card>
+          {/* Core rule: admins never see patient medical data */}
+          <Card sx={{ mb: 3, borderRadius: 3, border: '1px solid', borderColor: 'info.light', bgcolor: 'info.50' }}>
+            <CardContent>
+              <Typography variant="subtitle2" fontWeight={900} gutterBottom>
+                {isAmharic ? '🔒 ዋና ደንብ' : '🔒 Core Rule'}
+              </Typography>
+              <Typography variant="body2">
+                {isAmharic
+                  ? 'ማንኛውም አስተዳዳሪ የታካሚ የሕክምና መረጃ ማየት አይችልም። የሚታዩ ቁጥሮች/ስታቲስቲክስ ብቻ ናቸው።'
+                  : 'No admin can view patient medical data. Admin dashboards show anonymous statistics only.'}
+              </Typography>
+            </CardContent>
+          </Card>
 
-      {/* Quick anonymous stats */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item xs={12} md={3}>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                {isAmharic ? 'ጠቅላላ ታካሚዎች (ቁጥር)' : 'Total patients (count)'}
-              </Typography>
-              <Typography variant="h5" fontWeight={900}>
-                234,567+
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                {isAmharic ? 'ጠቅላላ ተቋማት' : 'Total facilities'}
-              </Typography>
-              <Typography variant="h5" fontWeight={900}>
-                86
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                {isAmharic ? 'ባለሙያዎች (ዶ/ር+ነርስ)' : 'Professionals (doctors+nurses)'}
-              </Typography>
-              <Typography variant="h5" fontWeight={900}>
-                1,240
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="caption" color="text.secondary">
-                {isAmharic ? 'የዛሬ ምዝገባዎች' : "Today's registrations"}
-              </Typography>
-              <Typography variant="h5" fontWeight={900}>
-                18
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+          {/* Quick anonymous stats */}
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="caption" color="text.secondary">
+                    {isAmharic ? 'ጠቅላላ ታካሚዎች (ቁጥር)' : 'Total patients (count)'}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={900}>
+                    234,567+
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="caption" color="text.secondary">
+                    {isAmharic ? 'ጠቅላላ ተቋማት' : 'Total facilities'}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={900}>
+                    86
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="caption" color="text.secondary">
+                    {isAmharic ? 'ባለሙያዎች (ዶ/ር+ነርስ)' : 'Professionals (doctors+nurses)'}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={900}>
+                    1,240
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="caption" color="text.secondary">
+                    {isAmharic ? 'የዛሬ ምዝገባዎች' : "Today's registrations"}
+                  </Typography>
+                  <Typography variant="h5" fontWeight={900}>
+                    18
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </>
+      )}
 
       {tab === 0 && (
         <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
@@ -279,6 +320,42 @@ export const AdminDashboard: React.FC = () => {
                 ? 'እዚህ ቦታ ውስጥ የዞን/ወረዳ/ከተማ/ተቋም መለኪያዎች ብቻ ይታያሉ (ስሞች ወይም መዝገቦች አይታዩም)።'
                 : 'This area shows counts only (no patient names/records).'}
             </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {tab === 6 && (
+        <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={900} gutterBottom>
+              {isAmharic ? 'የኦዲት መዝገብ (Mock)' : 'AUDIT LOGS (Mock)'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {isAmharic
+                ? 'እዚህ ቦታ ላይ የተግባር መዝገቦች ይታያሉ (API እስኪገናኝ ድረስ ማስመሰል ነው).'
+                : 'Entries below are mock data until API integration.'}
+            </Typography>
+            <Table component={Paper} size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>{isAmharic ? 'ጊዜ' : 'Time'}</TableCell>
+                  <TableCell>{isAmharic ? 'ተግባር' : 'Action'}</TableCell>
+                  <TableCell>{isAmharic ? 'ተጠቃሚ' : 'Actor'}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                <TableRow>
+                  <TableCell>2026-03-15 10:30</TableCell>
+                  <TableCell>{isAmharic ? 'ታካሚ ምዝገባ' : 'Patient registration'}</TableCell>
+                  <TableCell>{isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>2026-03-15 09:15</TableCell>
+                  <TableCell>{isAmharic ? 'ኦዲት ፍተሻ' : 'Audit check'}</TableCell>
+                  <TableCell>{isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
@@ -304,13 +381,8 @@ export const AdminDashboard: React.FC = () => {
                     <InputLabel>{isAmharic ? 'የሚፈጠር ደረጃ' : 'Create level'}</InputLabel>
                     <Select
                       label={isAmharic ? 'የሚፈጠር ደረጃ' : 'Create level'}
-                      defaultValue={
-                        adminLevel === 'zonal'
-                          ? 'woreda'
-                          : adminLevel === 'woreda' || adminLevel === 'city'
-                          ? 'facility'
-                          : 'none'
-                      }
+                      value={createLevel}
+                      onChange={(e) => setCreateLevel(String(e.target.value))}
                     >
                       {adminLevel === 'zonal' && (
                         <>
@@ -328,10 +400,14 @@ export const AdminDashboard: React.FC = () => {
                       )}
                     </Select>
                   </FormControl>
-                  <TextField fullWidth label={isAmharic ? 'ሙሉ ስም' : 'Full name'} />
-                  <TextField fullWidth label={isAmharic ? 'ኢሜይል' : 'Email'} />
-                  <TextField fullWidth label={isAmharic ? 'ስልክ' : 'Phone'} />
-                  <Button variant="contained" disabled={adminLevel === 'facility'}>
+                  <TextField fullWidth label={isAmharic ? 'ሙሉ ስም' : 'Full name'} value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} />
+                  <TextField fullWidth label={isAmharic ? 'ኢሜይል' : 'Email'} value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} />
+                  <TextField fullWidth label={isAmharic ? 'ስልክ' : 'Phone'} value={newAdminPhone} onChange={(e) => setNewAdminPhone(e.target.value)} />
+                  <Button
+                    variant="contained"
+                    disabled={adminLevel === 'facility'}
+                    onClick={handleCreateAdmin}
+                  >
                     {isAmharic ? 'ፍጠር' : 'Create'}
                   </Button>
                 </Stack>
@@ -366,7 +442,16 @@ export const AdminDashboard: React.FC = () => {
                 ? 'ይህ ክፍል በዚህ ደረጃ ላይ ሊገድብ ይችላል።'
                 : 'This section may be restricted for your level.'}
             </Typography>
-            <Button variant="contained" disabled={!(adminLevel === 'woreda' || adminLevel === 'city')}>
+            <Button
+              variant="contained"
+              disabled={!(adminLevel === 'woreda' || adminLevel === 'city')}
+              onClick={() =>
+                toast(
+                  'success',
+                  isAmharic ? 'ተቋም መመዝገብ (Mock) ተጠናቋል።' : 'Facility registered (Mock).'
+                )
+              }
+            >
               {isAmharic ? 'አዲስ ተቋም መመዝገብ' : 'Register New Facility'}
             </Button>
           </CardContent>
@@ -388,7 +473,16 @@ export const AdminDashboard: React.FC = () => {
                 ? 'ይህ ክፍል ለተቋም አስተዳዳሪ ብቻ ነው።'
                 : 'This section is for facility admins only.'}
             </Typography>
-            <Button variant="contained" disabled={adminLevel !== 'facility'}>
+            <Button
+              variant="contained"
+              disabled={adminLevel !== 'facility'}
+              onClick={() =>
+                toast(
+                  'success',
+                  isAmharic ? 'ባለሙያ ፍጠር (Mock) ተጠናቋል።' : 'Professional created (Mock).'
+                )
+              }
+            >
               {isAmharic ? 'አዲስ ባለሙያ ፍጠር' : 'Create Professional'}
             </Button>
           </CardContent>
@@ -824,6 +918,22 @@ export const AdminDashboard: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

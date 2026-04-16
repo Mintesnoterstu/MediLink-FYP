@@ -17,74 +17,45 @@ import {
   Close,
   Minimize,
   Warning,
+  OpenInFull,
+  CloseFullscreen,
+  Replay,
+  MedicalServices,
 } from '@mui/icons-material';
 import { useHealthData } from '@/contexts/HealthDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { AIMessage } from '@/types';
-import logo from '@/assets/logo.png';
 
 interface FloatingChatBotProps {
   initialMinimized?: boolean;
 }
 
-// Quick action buttons based on current page
-const getQuickActions = (pathname: string, t: any) => {
-  const actions: Array<{ label: string; message: string }> = [];
-
-  if (pathname.includes('/diseases')) {
-    actions.push(
-      { label: t('chat.explainSymptoms'), message: 'Can you explain the symptoms of this disease?' },
-      { label: t('chat.showPrevention'), message: 'How can I prevent this condition?' },
-      { label: t('chat.findTreatments'), message: 'What are the treatment options?' }
-    );
-  } else if (pathname.includes('/symptom-checker')) {
-    actions.push(
-      { label: t('chat.analyzeSymptoms'), message: 'I need help analyzing my symptoms' },
-      { label: t('chat.isThisSerious'), message: 'Is this condition serious? When should I see a doctor?' }
-    );
-  } else if (pathname.includes('/dashboard')) {
-    actions.push(
-      { label: t('chat.healthAdvice'), message: 'Can you give me personalized health advice based on my data?' },
-      { label: t('chat.medicationHelp'), message: 'I have questions about my medications' }
-    );
-  } else if (pathname.includes('/medicine-hub')) {
-    actions.push(
-      { label: t('chat.treatmentInfo'), message: 'Tell me about treatment options' },
-      { label: t('chat.remedyInfo'), message: 'What remedies are available?' }
-    );
-  } else {
-    actions.push(
-      { label: t('chat.generalHealth'), message: 'I have a general health question' },
-      { label: t('chat.findInfo'), message: 'Help me find health information' }
-    );
-  }
-
-  return actions;
-};
-
-// Get context-aware greeting based on current page
-const getContextualGreeting = (pathname: string, t: any): string => {
-  if (pathname.includes('/diseases')) {
-    return t('chat.greetingDiseases') || "I see you're exploring our disease library. How can I help you understand any condition better?";
-  } else if (pathname.includes('/symptom-checker')) {
-    return t('chat.greetingSymptoms') || "I'm here to help you understand your symptoms. What would you like to know?";
-  } else if (pathname.includes('/dashboard')) {
-    return t('chat.greetingDashboard') || "Hello! I can provide personalized health advice based on your health data. How can I assist you?";
-  } else if (pathname.includes('/medicine-hub')) {
-    return t('chat.greetingMedicine') || "I can help you understand treatments and remedies. What would you like to learn about?";
-  }
-  return t('chat.greetingDefault') || "Hello! I'm Medi Assistant, your AI health guide. I'm here to help with health questions. How can I assist you today?";
-};
+const quickSuggestions = (isAmharic: boolean) => [
+  {
+    label: isAmharic ? 'ወባ ምንድን ነው?' : 'What is malaria?',
+    message: 'What is malaria?',
+  },
+  {
+    label: isAmharic ? 'የስኳር በሽታ ምልክቶች?' : 'Symptoms of diabetes?',
+    message: 'Symptoms of diabetes?',
+  },
+  {
+    label: isAmharic ? 'የደም ግፊትን እንዴት እቀንስ?' : 'How to lower blood pressure?',
+    message: 'How to lower blood pressure?',
+  },
+];
 
 export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimized = true }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { user } = useAuth();
   const { patientData } = useHealthData();
+  const isAmharic = (i18n.language || '').startsWith('am');
 
   const [isMinimized, setIsMinimized] = useState(initialMinimized);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [showDisclaimer, setShowDisclaimer] = useState(true);
@@ -101,7 +72,9 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
     const greeting: AIMessage = {
       id: 'greeting',
       role: 'assistant',
-      content: getContextualGreeting(location.pathname, t),
+      content: isAmharic
+        ? 'ሰላም! እኔ ሜዲ አሲስታንት ነኝ። በጋሌ ኢንሳይክሎፔዲያ ኦፍ ሜዲሲን ላይ የተመሠረተ የጤና መረጃ አቀርባለሁ።'
+        : "Hello! I'm Medi Assistant. I provide health information based on the Gale Encyclopedia of Medicine.",
       timestamp: new Date().toISOString(),
     };
     setMessages([greeting]);
@@ -132,7 +105,9 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
     const greeting: AIMessage = {
       id: 'greeting',
       role: 'assistant',
-      content: getContextualGreeting(location.pathname, t),
+      content: isAmharic
+        ? 'ሰላም! እኔ ሜዲ አሲስታንት ነኝ። በጋሌ ኢንሳይክሎፔዲያ ኦፍ ሜዲሲን ላይ የተመሠረተ የጤና መረጃ አቀርባለሁ።'
+        : "Hello! I'm Medi Assistant. I provide health information based on the Gale Encyclopedia of Medicine.",
       timestamp: new Date().toISOString(),
     };
     setMessages([greeting]);
@@ -156,7 +131,9 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
       const greeting: AIMessage = {
         id: 'greeting',
         role: 'assistant',
-        content: getContextualGreeting(location.pathname, t),
+      content: isAmharic
+        ? 'ሰላም! እኔ ሜዲ አሲስታንት ነኝ። በጋሌ ኢንሳይክሎፔዲያ ኦፍ ሜዲሲን ላይ የተመሠረተ የጤና መረጃ አቀርባለሁ።'
+        : "Hello! I'm Medi Assistant. I provide health information based on the Gale Encyclopedia of Medicine.",
         timestamp: new Date().toISOString(),
       };
       setMessages([greeting]);
@@ -229,6 +206,8 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
           'I apologize, but I encountered an error. Please try again or consult with a healthcare provider for immediate concerns.',
         timestamp: new Date().toISOString(),
         confidence: 0.3,
+        isError: true,
+        retryPayload: inputMessage,
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -273,6 +252,8 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               'I apologize, but I encountered an error. Please try again or consult with a healthcare provider for immediate concerns.',
             timestamp: new Date().toISOString(),
             confidence: 0.3,
+            isError: true,
+            retryPayload: message,
           };
           setMessages((prev) => [...prev, errorMessage]);
         })
@@ -283,7 +264,16 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
   };
 
 
-  const quickActions = getQuickActions(location.pathname, t);
+  const quickActions = quickSuggestions(isAmharic);
+
+  const handleRetry = (payload?: string) => {
+    if (!payload || isProcessing) return;
+    setInputMessage(payload);
+    // re-use main send handler after setting input
+    setTimeout(() => {
+      handleSend();
+    }, 0);
+  };
 
   return (
     <>
@@ -292,8 +282,8 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
         <Box
           sx={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
+            bottom: { xs: 12, sm: 24 },
+            right: { xs: 12, sm: 24 },
             zIndex: 1300,
           }}
         >
@@ -301,8 +291,8 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
             elevation={8}
             sx={{
               borderRadius: '50%',
-              width: 64,
-              height: 64,
+              width: { xs: 56, sm: 64 },
+              height: { xs: 56, sm: 64 },
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -335,11 +325,18 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
               <Box
-                component="img"
-                src={logo}
-                alt="MediLink"
-                sx={{ width: 36, height: 36, borderRadius: 1, bgcolor: 'rgba(255,255,255,0.15)', p: 0.5 }}
-              />
+                sx={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <MedicalServices sx={{ color: 'white', fontSize: 22 }} />
+              </Box>
             </Badge>
           </Paper>
         </Box>
@@ -351,12 +348,13 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
           ref={chatContainerRef}
           sx={{
             position: 'fixed',
-            bottom: 24,
-            right: 24,
-            width: { xs: 'calc(100vw - 48px)', sm: 400 },
-            maxWidth: 400,
-            height: 600,
-            maxHeight: { xs: 'calc(100vh - 48px)', sm: 600 },
+            bottom: { xs: 8, sm: 24 },
+            right: { xs: 8, sm: 24 },
+            left: { xs: 8, sm: 'auto' },
+            width: isMaximized ? { xs: 'calc(100vw - 16px)', sm: 520 } : { xs: 'calc(100vw - 16px)', sm: 400 },
+            maxWidth: isMaximized ? 520 : 400,
+            height: isMaximized ? { xs: 'calc(100vh - 16px)', sm: 640 } : { xs: 'min(78vh, 560px)', sm: 520 },
+            maxHeight: { xs: 'calc(100vh - 16px)', sm: isMaximized ? 640 : 520 },
             zIndex: 1300,
             display: 'flex',
             flexDirection: 'column',
@@ -387,11 +385,18 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
             >
               <Box display="flex" alignItems="center" gap={1}>
                 <Box
-                  component="img"
-                  src={logo}
-                  alt="MediLink"
-                  sx={{ width: 24, height: 24, borderRadius: 0.75, bgcolor: 'rgba(255,255,255,0.15)', p: 0.25 }}
-                />
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <MedicalServices sx={{ color: 'white', fontSize: 16 }} />
+                </Box>
                 <Typography variant="h6" fontWeight={600}>
                   {t('chat.title') || 'Medi Assistant'}
                 </Typography>
@@ -406,10 +411,17 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               <Box display="flex" gap={0.5}>
                 <IconButton
                   size="small"
+                  onClick={() => setIsMaximized((prev) => !prev)}
+                  sx={{ color: 'white' }}
+                >
+                  {isMaximized ? <CloseFullscreen fontSize="small" /> : <OpenInFull fontSize="small" />}
+                </IconButton>
+                <IconButton
+                  size="small"
                   onClick={() => setIsMinimized(true)}
                   sx={{ color: 'white' }}
                 >
-                  <Minimize />
+                  <Minimize fontSize="small" />
                 </IconButton>
                 <IconButton
                   size="small"
@@ -419,7 +431,7 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                   }}
                   sx={{ color: 'white' }}
                 >
-                  <Close />
+                  <Close fontSize="small" />
                 </IconButton>
               </Box>
             </Box>
@@ -457,40 +469,85 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                 gap: 1,
               }}
             >
-              {messages.map((message) => (
-                <Box
-                  key={message.id}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start',
-                  }}
-                >
-                  <Paper
-                    elevation={1}
+              {messages.map((message) => {
+                const isUser = message.role === 'user';
+                const isAssistant = message.role === 'assistant';
+                let title: string | null = null;
+                let body: string | null = null;
+                if (isAssistant && message.content.includes('\n\n')) {
+                  const parts = message.content.split('\n\n');
+                  title = parts[0];
+                  body = parts.slice(1).join('\n\n');
+                }
+                return (
+                  <Box
+                    key={message.id}
                     sx={{
-                      p: 1.5,
-                      maxWidth: '80%',
-                      borderRadius: 2,
-                      bgcolor: message.role === 'user' ? 'primary.main' : 'background.paper',
-                      color: message.role === 'user' ? 'white' : 'text.primary',
-                      border: message.role === 'assistant' ? '1px solid' : 'none',
-                      borderColor: message.role === 'assistant' ? 'primary.light' : 'transparent',
+                      display: 'flex',
+                      justifyContent: isUser ? 'flex-end' : 'flex-start',
                     }}
                   >
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {message.content}
-                    </Typography>
-                    {message.confidence !== undefined && message.confidence < 0.7 && (
-                      <Chip
-                        label={t('chat.lowConfidence') || 'Low Confidence'}
-                        size="small"
-                        color="warning"
-                        sx={{ mt: 0.5, height: 18, fontSize: '0.65rem' }}
-                      />
-                    )}
-                  </Paper>
-                </Box>
-              ))}
+                    <Paper
+                      elevation={1}
+                      sx={{
+                        p: 1.5,
+                        maxWidth: '80%',
+                        borderRadius: 2,
+                        bgcolor: isUser
+                          ? 'primary.main'
+                          : message.isError
+                          ? 'error.light'
+                          : 'background.paper',
+                        color: isUser ? 'white' : 'text.primary',
+                        border: isAssistant ? '1px solid' : 'none',
+                        borderColor: message.isError ? 'error.main' : isAssistant ? 'primary.light' : 'transparent',
+                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                        '&:hover': {
+                          transform: 'translateY(-1px)',
+                          boxShadow: 3,
+                        },
+                      }}
+                    >
+                      {title && body && !message.isError ? (
+                        <>
+                          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5, whiteSpace: 'pre-wrap' }}>
+                            {title}
+                          </Typography>
+                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                            {body}
+                          </Typography>
+                        </>
+                      ) : (
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {message.content}
+                        </Typography>
+                      )}
+                      {message.isError && message.retryPayload && (
+                        <Box mt={1} display="flex" justifyContent="flex-end">
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="inherit"
+                            startIcon={<Replay fontSize="small" />}
+                            onClick={() => handleRetry(message.retryPayload)}
+                            sx={{ fontSize: '0.7rem', textTransform: 'none' }}
+                          >
+                            {t('chat.retry') || 'Retry'}
+                          </Button>
+                        </Box>
+                      )}
+                      {message.confidence !== undefined && message.confidence < 0.7 && (
+                        <Chip
+                          label={t('chat.lowConfidence') || 'Low Confidence'}
+                          size="small"
+                          color="warning"
+                          sx={{ mt: 0.5, height: 18, fontSize: '0.65rem' }}
+                        />
+                      )}
+                    </Paper>
+                  </Box>
+                );
+              })}
               {isProcessing && (
                 <Box display="flex" justifyContent="flex-start">
                   <Paper
@@ -506,7 +563,7 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                     <Box display="flex" alignItems="center" gap={1}>
                       <CircularProgress size={16} />
                       <Typography variant="body2" color="text.secondary">
-                        {t('chat.typing') || 'Typing…'}
+                        {isAmharic ? 'ሜዲ አሲስታንት በመጻፍ ላይ ነው...' : 'Medi Assistant is typing...'}
                       </Typography>
                     </Box>
                   </Paper>
@@ -514,38 +571,6 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               )}
               <div ref={messagesEndRef} />
             </Box>
-
-            {/* Quick Actions */}
-            {quickActions.length > 0 && messages.length <= 1 && (
-              <Box sx={{ p: 1, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider' }}>
-                <Typography variant="caption" color="text.secondary" sx={{ px: 1, display: 'block', mb: 0.5 }}>
-                  {t('chat.quickActions') || 'Quick actions:'}
-                </Typography>
-                <Box display="flex" flexWrap="wrap" gap={0.5}>
-                  {quickActions.map((action, idx) => (
-                    <Button
-                      key={idx}
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleQuickAction(action.message)}
-                      sx={{
-                        fontSize: '0.7rem',
-                        py: 0.25,
-                        px: 1,
-                        borderColor: 'primary.main',
-                        color: 'primary.main',
-                        '&:hover': {
-                          bgcolor: 'primary.light',
-                          color: 'white',
-                        },
-                      }}
-                    >
-                      {action.label}
-                    </Button>
-                  ))}
-                </Box>
-              </Box>
-            )}
 
             {/* Input Area */}
             <Box
@@ -557,29 +582,15 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
               }}
             >
               <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  {t('chat.suggestions') || 'Suggestions:'}
-                </Typography>
                 <Button size="small" variant="text" color="warning" onClick={clearHistory}>
-                  {t('chat.clearHistory') || 'Clear'}
+                  {isAmharic ? 'አጥፋ' : 'Clear'}
                 </Button>
-              </Box>
-              <Box display="flex" flexWrap="wrap" gap={0.5} sx={{ mb: 1 }}>
-                {getQuickActions(location.pathname, t).slice(0, 2).map((a) => (
-                  <Chip
-                    key={a.label}
-                    label={a.label}
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleQuickAction(a.message)}
-                  />
-                ))}
               </Box>
               <Box display="flex" gap={1}>
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder={t('chat.placeholder') || 'Type your health question...'}
+                    placeholder={isAmharic ? 'የጤና ጥያቄዎን ይፃፉ...' : 'Type your health question...'}
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
@@ -617,7 +628,9 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
                 </IconButton>
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}>
-                {t('chat.footer') || 'Press Enter to send • Shift+Enter for new line'}
+                {isAmharic
+                  ? 'ለመላክ Enter ይጫኑ • ለአዲስ መስመር Shift+Enter'
+                  : 'Press Enter to send • Shift+Enter for new line'}
               </Typography>
             </Box>
           </Paper>

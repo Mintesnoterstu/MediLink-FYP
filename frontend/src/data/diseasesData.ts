@@ -239,6 +239,7 @@ export const mockDiseases: Disease[] = [
     bodyRegions: ['head', 'chest', 'abdomen', 'muscles'],
     seasonal: ['Rainy season'],
     seasonalAmharic: ['ዝናባማ ወቅት'],
+    videoUrl: 'https://www.youtube.com/embed/5u6SeLdO2C8',
   },
   {
     id: 'ast1',
