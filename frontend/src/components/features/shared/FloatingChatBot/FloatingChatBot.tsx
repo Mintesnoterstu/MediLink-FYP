@@ -32,20 +32,6 @@ interface FloatingChatBotProps {
   initialMinimized?: boolean;
 }
 
-const quickSuggestions = (isAmharic: boolean) => [
-  {
-    label: isAmharic ? 'ወባ ምንድን ነው?' : 'What is malaria?',
-    message: 'What is malaria?',
-  },
-  {
-    label: isAmharic ? 'የስኳር በሽታ ምልክቶች?' : 'Symptoms of diabetes?',
-    message: 'Symptoms of diabetes?',
-  },
-  {
-    label: isAmharic ? 'የደም ግፊትን እንዴት እቀንስ?' : 'How to lower blood pressure?',
-    message: 'How to lower blood pressure?',
-  },
-];
 
 export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimized = true }) => {
   const { t, i18n } = useTranslation();
@@ -214,57 +200,6 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
       setIsProcessing(false);
     }
   };
-
-  const handleQuickAction = (message: string) => {
-    setInputMessage(message);
-    // Auto-send quick action messages
-    setTimeout(() => {
-      setInputMessage('');
-      const userMessage: AIMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: message,
-        timestamp: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-      setShowDisclaimer(false);
-
-      setIsProcessing(true);
-      callChatbotApi(message)
-        .then((answer) => {
-          const botMessage: AIMessage = {
-            id: `${Date.now()}-bot`,
-            role: 'assistant',
-            content:
-              answer ||
-              "I don't know based on this medical book. / በዚህ የሕክምና መጽሐፍ መሠረት አላወቅም።",
-            timestamp: new Date().toISOString(),
-          };
-          setMessages((prev) => [...prev, botMessage]);
-        })
-        .catch((error) => {
-          console.error('Failed to send message:', error);
-          const errorMessage: AIMessage = {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content:
-              t('chat.errorMessage') ||
-              'I apologize, but I encountered an error. Please try again or consult with a healthcare provider for immediate concerns.',
-            timestamp: new Date().toISOString(),
-            confidence: 0.3,
-            isError: true,
-            retryPayload: message,
-          };
-          setMessages((prev) => [...prev, errorMessage]);
-        })
-        .finally(() => {
-          setIsProcessing(false);
-        });
-    }, 100);
-  };
-
-
-  const quickActions = quickSuggestions(isAmharic);
 
   const handleRetry = (payload?: string) => {
     if (!payload || isProcessing) return;
