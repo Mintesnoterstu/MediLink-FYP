@@ -333,6 +333,8 @@ export interface VerifiedRemedy {
   culturalContext: string;
   culturalContextAmharic?: string;
   modernCorrelation?: string;
+  /** Public URL under `frontend/public` (e.g. `/medicine%20images/Paracetamol.png`) */
+  imageUrl?: string;
 }
 
 export type RemedyCategory =
@@ -342,7 +344,8 @@ export type RemedyCategory =
   | 'spiritual'
   | 'modern-traditional'
   | 'traditional'
-  | 'modern';
+  | 'modern'
+  | 'prescription';
 
 export type VerificationLevel = 'verified' | 'under-review' | 'unverified';
 export type EvidenceLevel = 'strong' | 'moderate' | 'anecdotal' | 'none';
