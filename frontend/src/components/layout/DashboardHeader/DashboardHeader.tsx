@@ -93,11 +93,14 @@ export const DashboardHeader: React.FC = () => {
                 p: 0.5,
               }}
             />
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, lineHeight: 1, fontSize: { xs: '0.95rem', sm: '1.25rem' } }}
+              >
                 MediLink
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.85 }}>
+              <Typography variant="caption" sx={{ opacity: 0.85, display: { xs: 'none', sm: 'block' } }}>
                 የጤና መረጃ
               </Typography>
             </Box>

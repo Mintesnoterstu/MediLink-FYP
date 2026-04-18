@@ -14,7 +14,16 @@ export const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children
       <CssBaseline />
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <UniversalHeader />
-        <Box component="main" sx={{ flexGrow: 1 }}>
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            width: '100%',
+            maxWidth: '100vw',
+            overflowX: 'hidden',
+            minWidth: 0,
+          }}
+        >
           {children}
         </Box>
         <Footer />

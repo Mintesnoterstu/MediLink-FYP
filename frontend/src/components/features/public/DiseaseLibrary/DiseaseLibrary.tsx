@@ -979,27 +979,34 @@ export const DiseaseLibrary: React.FC<DiseaseLibraryProps> = ({
     (seasonalFilter !== 'all' ? 1 : 0);
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden' }}>
       {/* Hero Header */}
       <Box
         sx={{
           background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 60%, #2C3E50 100%)',
           color: 'white',
-          py: 6,
+          py: { xs: 4, sm: 6 },
+          px: { xs: 1.5, sm: 2 },
           textAlign: 'center',
         }}
       >
-        <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          fontWeight={700}
+          sx={{ fontSize: { xs: '1.65rem', sm: '2rem', md: '2.75rem' }, lineHeight: 1.2, px: 1 }}
+        >
           {t('diseases.title')}
         </Typography>
-        <Typography variant="h6" sx={{ opacity: 0.9 }}>
+        <Typography variant="h6" sx={{ opacity: 0.9, fontSize: { xs: '0.95rem', sm: '1.1rem' } }}>
           {t('diseases.subtitle')}
         </Typography>
       </Box>
 
-      <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+      <Box sx={{ maxWidth: 1400, mx: 'auto', width: '100%', p: { xs: 2, sm: 3 }, boxSizing: 'border-box' }}>
         {/* Search and Quick Filters */}
-        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
+        <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, mb: 4, borderRadius: 3 }}>
           <Stack spacing={3}>
             {/* Search Bar */}
             <TextField
@@ -1080,6 +1087,7 @@ export const DiseaseLibrary: React.FC<DiseaseLibraryProps> = ({
                 onChange={(_, newValue) => setCategoryFilter(newValue)}
                 variant="scrollable"
                 scrollButtons="auto"
+                allowScrollButtonsMobile
                 sx={{
                   '& .MuiTab-root': {
                     color: 'text.secondary',
@@ -1190,7 +1198,7 @@ export const DiseaseLibrary: React.FC<DiseaseLibraryProps> = ({
         </Paper>
 
         {/* Body Map Filter */}
-        <Paper elevation={2} sx={{ p: 3, mb: 4, borderRadius: 3 }}>
+        <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 }, mb: 4, borderRadius: 3 }}>
           <Typography variant="h6" gutterBottom fontWeight={700} sx={{ color: 'primary.main', mb: 2 }}>
             {t('diseases.filterByBodyRegion') || 'Filter by body region'}
           </Typography>

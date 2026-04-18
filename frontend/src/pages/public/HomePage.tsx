@@ -285,7 +285,7 @@ export const HomePage: React.FC = () => {
 
         {/* Public resources */}
         <Box sx={{ mb: 8 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
+          <Typography variant="h4" fontWeight={700} gutterBottom sx={{ fontSize: { xs: '1.35rem', sm: '1.6rem', md: '2rem' } }}>
             {isAmharic ? 'የህዝብ መረጃዎችን ያስሱ' : 'Explore our public resources'}
           </Typography>
           <Grid container spacing={3}>

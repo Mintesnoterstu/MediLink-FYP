@@ -148,8 +148,8 @@ export const HelpPage: React.FC = () => {
   }, [q, sections]);
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight={900} gutterBottom>
+    <Container maxWidth="md" sx={{ py: { xs: 3, sm: 4 }, px: { xs: 2, sm: 3 }, width: '100%', boxSizing: 'border-box' }}>
+      <Typography variant="h4" fontWeight={900} gutterBottom sx={{ fontSize: { xs: '1.35rem', sm: '1.75rem', md: '2rem' } }}>
         {isAm ? 'እርዳታ' : 'Help'} / {isAm ? 'Help' : 'እርዳታ'}
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
@@ -177,11 +177,11 @@ export const HelpPage: React.FC = () => {
         {filtered.map((s) => (
           <Accordion key={s.id} defaultExpanded={s.id === 'patients'}>
             <AccordionSummary expandIcon={<ExpandMore />}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography variant="h6" fontWeight={800}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', pr: 1 }}>
+                <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '0.95rem', sm: '1.15rem' } }}>
                   {isAm ? s.titleAm : s.titleEn}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'inline' } }}>
                   / {isAm ? s.titleEn : s.titleAm}
                 </Typography>
                 {s.chips?.slice(0, 3).map((c) => (

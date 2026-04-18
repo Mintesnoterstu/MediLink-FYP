@@ -37,7 +37,17 @@ export const AppLayout: React.FC<{ children: React.ReactNode; useSidebar?: boole
             <UniversalHeader onMenuClick={useSidebar ? () => setSidebarOpen(true) : undefined} />
             <Box sx={{ display: 'flex', flex: 1 }}>
               {useSidebar && <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />}
-              <Box component="main" sx={{ flexGrow: 1, p: useSidebar ? 3 : 0 }}>
+              <Box
+                component="main"
+                sx={{
+                  flexGrow: 1,
+                  p: useSidebar ? { xs: 1.5, sm: 2, md: 3 } : 0,
+                  width: '100%',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  overflowX: 'hidden',
+                }}
+              >
                 {children}
               </Box>
             </Box>

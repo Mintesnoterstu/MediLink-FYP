@@ -15,7 +15,7 @@ export const RegisterPage: React.FC = () => {
 
   // Patients cannot self-register. Registration is done at a facility by a facility admin.
   return (
-    <Box sx={{ maxWidth: 720, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 720, mx: 'auto', p: { xs: 2, sm: 3 }, width: '100%', boxSizing: 'border-box' }}>
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Typography variant="h5" fontWeight={900} gutterBottom>

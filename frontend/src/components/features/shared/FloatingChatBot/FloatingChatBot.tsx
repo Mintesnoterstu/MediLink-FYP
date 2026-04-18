@@ -302,7 +302,7 @@ export const FloatingChatBot: React.FC<FloatingChatBotProps> = ({ initialMinimiz
             right: { xs: 8, sm: 24 },
             left: { xs: 8, sm: 'auto' },
             width: isMaximized ? { xs: 'calc(100vw - 16px)', sm: 520 } : { xs: 'calc(100vw - 16px)', sm: 400 },
-            maxWidth: isMaximized ? 520 : 400,
+            maxWidth: { xs: 'calc(100vw - 16px)', sm: isMaximized ? 520 : 400 },
             height: isMaximized ? { xs: 'calc(100vh - 16px)', sm: 640 } : { xs: 'min(78vh, 560px)', sm: 520 },
             maxHeight: { xs: 'calc(100vh - 16px)', sm: isMaximized ? 640 : 520 },
             zIndex: 1300,

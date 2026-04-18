@@ -93,7 +93,7 @@ export const Footer: React.FC = () => {
               {isAm ? 'አግኙን' : 'Contact'} / {isAm ? 'Contact' : 'አግኙን'}
             </Typography>
             <Stack spacing={0.5} mb={2}>
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
                 {isAm ? 'ኢሜይል' : 'Email'}: support@medilink.et
               </Typography>
               <Typography variant="body2">

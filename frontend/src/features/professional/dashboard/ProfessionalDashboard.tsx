@@ -82,9 +82,9 @@ export const ProfessionalDashboard: React.FC = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
       {/* Header */}
-      <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
+      <Typography variant="h6" fontWeight={800} sx={{ mb: 1, fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }, lineHeight: 1.3 }}>
         {isAmharic ? 'የጤና ባለሙያ ዳሽቦርድ' : 'HEALTH PROFESSIONAL DASHBOARD'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -81,6 +81,11 @@ export const MedicinePage: React.FC = () => {
   const [selectedHealthGoal, setSelectedHealthGoal] = useState<string | null>(null);
   const [selectedRemedy, setSelectedRemedy] = useState<VerifiedRemedy | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [visibleBySection, setVisibleBySection] = useState<Record<string, number>>({
+    otc: 6,
+    rx: 6,
+    trad: 6,
+  });
 
   const getText = (
     r: VerifiedRemedy,
@@ -126,6 +131,52 @@ export const MedicinePage: React.FC = () => {
     return filtered;
   }, [searchQuery, selectedBodyPart, selectedHealthGoal]);
 
+  const otcMedicines = useMemo(
+    () => filteredRemedies.filter((r) => r.category === 'modern'),
+    [filteredRemedies],
+  );
+  const prescriptionMedicines = useMemo(
+    () => filteredRemedies.filter((r) => r.category === 'prescription'),
+    [filteredRemedies],
+  );
+  const traditionalMedicines = useMemo(
+    () => filteredRemedies.filter((r) => r.category === 'traditional'),
+    [filteredRemedies],
+  );
+
+  const categoryChip = (r: VerifiedRemedy) => {
+    if (r.category === 'modern')
+      return isAmharic ? 'ያለ ሐኪም (OTC)' : 'OTC';
+    if (r.category === 'prescription') return isAmharic ? 'በሐኪም ብቻ' : 'Prescription';
+    return isAmharic ? 'ባህላዊ / ዕፅዋት' : 'Traditional';
+  };
+
+  const medicineSections = useMemo(
+    () => [
+      {
+        sectionKey: 'otc',
+        title: isAmharic ? 'ያለ ሐኪም የሚገዙ (OTC)' : 'Over-the-counter (OTC)',
+        items: otcMedicines,
+      },
+      {
+        sectionKey: 'rx',
+        title: isAmharic ? 'በሐኪም የሚታዘዙ' : 'Prescription medicines',
+        items: prescriptionMedicines,
+      },
+      {
+        sectionKey: 'trad',
+        title: isAmharic ? 'ባህላዊ / ዕፅዋት' : 'Traditional & herbal',
+        items: traditionalMedicines,
+      },
+    ],
+    [isAmharic, otcMedicines, prescriptionMedicines, traditionalMedicines],
+  );
+
+  useEffect(() => {
+    // When filters change, restart each section pagination
+    setVisibleBySection({ otc: 6, rx: 6, trad: 6 });
+  }, [searchQuery, selectedBodyPart, selectedHealthGoal]);
+
   const handleRemedyClick = (remedy: VerifiedRemedy) => {
     setSelectedRemedy(remedy);
     setDialogOpen(true);
@@ -141,19 +192,26 @@ export const MedicinePage: React.FC = () => {
         sx={{
           background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 60%, #2C3E50 100%)',
           color: 'white',
-          py: 4,
+          py: { xs: 3, sm: 4 },
+          px: { xs: 1.5, sm: 2 },
           textAlign: 'center',
         }}
       >
-        <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          fontWeight={700}
+          sx={{ fontSize: { xs: '1.65rem', sm: '2rem', md: '2.75rem' }, lineHeight: 1.2, px: 1 }}
+        >
           {heroTitle}
         </Typography>
-        <Typography variant="h6" sx={{ opacity: 0.9 }}>
+        <Typography variant="h6" sx={{ opacity: 0.9, fontSize: { xs: '0.95rem', sm: '1.1rem' }, px: 1 }}>
           {heroSubtitle}
         </Typography>
       </Box>
 
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%', p: { xs: 2, sm: 3 }, boxSizing: 'border-box' }}>
         <TextField
           fullWidth
           placeholder={searchPlaceholder}
@@ -187,9 +245,12 @@ export const MedicinePage: React.FC = () => {
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
           sx={{
             mb: 3,
-            '& .MuiTab-root': { fontWeight: 600, textTransform: 'none' },
+            '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', minHeight: 44, fontSize: { xs: '0.8rem', sm: '0.875rem' } },
             '& .Mui-selected': { color: '#4A90E2' },
             '& .MuiTabs-indicator': { bgcolor: '#4A90E2' },
           }}
@@ -259,72 +320,115 @@ export const MedicinePage: React.FC = () => {
               </Grid>
             </Grid>
 
-            <Typography variant="h6" gutterBottom mb={2} fontWeight={700} sx={{ color: '#4A90E2' }}>
-              {isAmharic ? 'ባህላዊ መድሀኒቶች' : 'Traditional Remedies'}
-            </Typography>
-            <Grid container spacing={3}>
-              {filteredRemedies.map((remedy) => {
-                const dispName = isAmharic && remedy.nameAmharic ? remedy.nameAmharic : remedy.name;
-                const dispDesc = getText(remedy, 'description');
-                const dispIndications = getText(remedy, 'indications') as string[];
-                return (
-                  <Grid item xs={12} sm={6} md={4} key={remedy.id}>
-                    <Card
-                      sx={{
-                        height: '100%',
-                        cursor: 'pointer',
-                        borderRadius: 3,
-                        border: '2px solid',
-                        borderColor: '#EEEEEE',
-                        overflow: 'hidden',
-                        '&:hover': {
-                          boxShadow: 6,
-                          borderColor: '#4A90E2',
-                          transform: 'translateY(-4px)',
-                        },
-                      }}
-                      onClick={() => handleRemedyClick(remedy)}
+            {medicineSections.map((section, sIdx) => (
+              <Box key={section.sectionKey} sx={{ mb: sIdx < medicineSections.length - 1 ? 4 : 0 }}>
+                <Typography variant="h6" gutterBottom mb={2} fontWeight={700} sx={{ color: '#4A90E2' }}>
+                  {section.title}
+                </Typography>
+                <Grid container spacing={3}>
+                  {section.items.slice(0, visibleBySection[section.sectionKey] ?? 6).map((remedy) => {
+                    const dispName = isAmharic && remedy.nameAmharic ? remedy.nameAmharic : remedy.name;
+                    const dispDesc = getText(remedy, 'description');
+                    const dispIndications = getText(remedy, 'indications') as string[];
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={remedy.id}>
+                        <Card
+                          sx={{
+                            height: '100%',
+                            cursor: 'pointer',
+                            borderRadius: 3,
+                            border: '2px solid',
+                            borderColor: '#EEEEEE',
+                            overflow: 'hidden',
+                            '&:hover': {
+                              boxShadow: 6,
+                              borderColor: '#4A90E2',
+                              transform: 'translateY(-4px)',
+                            },
+                          }}
+                          onClick={() => handleRemedyClick(remedy)}
+                        >
+                          <Box
+                            sx={{
+                              height: 120,
+                              bgcolor: 'grey.200',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            {remedy.imageUrl ? (
+                              <Box
+                                component="img"
+                                src={remedy.imageUrl}
+                                alt=""
+                                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <Healing sx={{ fontSize: 48, color: 'grey.400' }} />
+                            )}
+                          </Box>
+                          <CardContent>
+                            <Box display="flex" justifyContent="space-between" alignItems="start" mb={1} flexWrap="wrap" gap={0.5}>
+                              <Typography variant="h6" fontWeight={600} sx={{ color: '#4A90E2' }}>
+                                {dispName}
+                              </Typography>
+                              <Chip
+                                label={categoryChip(remedy)}
+                                size="small"
+                                variant="outlined"
+                                sx={{ borderColor: '#4A90E2', color: '#4A90E2' }}
+                              />
+                            </Box>
+                            <Box display="flex" justifyContent="flex-end" mb={1}>
+                              {remedy.ministryApproved && (
+                                <Chip
+                                  icon={<VerifiedUser />}
+                                  label={isAmharic ? 'የተጸድቋል' : 'Approved'}
+                                  color="success"
+                                  size="small"
+                                />
+                              )}
+                            </Box>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              {String(dispDesc).length > 110 ? `${String(dispDesc).substring(0, 110)}…` : dispDesc}
+                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={1}>
+                              {(dispIndications || []).slice(0, 2).map((ind, idx) => (
+                                <Chip
+                                  key={idx}
+                                  label={ind}
+                                  size="small"
+                                  variant="outlined"
+                                  sx={{ borderColor: '#4A90E2', color: '#4A90E2' }}
+                                />
+                              ))}
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+                {section.items.length > (visibleBySection[section.sectionKey] ?? 6) && (
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                    <Button
+                      variant="outlined"
+                      onClick={() =>
+                        setVisibleBySection((prev) => ({
+                          ...prev,
+                          [section.sectionKey]: (prev[section.sectionKey] ?? 6) + 6,
+                        }))
+                      }
+                      sx={{ borderRadius: 999, px: 4 }}
                     >
-                      {/* Image placeholder (backend can supply imageUrl later) */}
-                      <Box
-                        sx={{
-                          height: 120,
-                          bgcolor: 'grey.200',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Healing sx={{ fontSize: 48, color: 'grey.400' }} />
-                      </Box>
-                      <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="start" mb={1.5}>
-                          <Typography variant="h6" fontWeight={600} sx={{ color: '#4A90E2' }}>
-                            {dispName}
-                          </Typography>
-                          {remedy.ministryApproved && (
-                            <Chip
-                              icon={<VerifiedUser />}
-                              label={isAmharic ? 'የተጸድቋል' : 'Approved'}
-                              color="success"
-                              size="small"
-                            />
-                          )}
-                        </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          {String(dispDesc).substring(0, 100)}...
-                        </Typography>
-                        <Box display="flex" flexWrap="wrap" gap={1}>
-                          {(dispIndications || []).slice(0, 2).map((ind, idx) => (
-                            <Chip key={idx} label={ind} size="small" variant="outlined" sx={{ borderColor: '#4A90E2', color: '#4A90E2' }} />
-                          ))}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
+                      {isAmharic ? 'ተጨማሪ አሳይ' : 'Load more'}
+                    </Button>
+                  </Box>
+                )}
+              </Box>
+            ))}
           </Box>
         )}
 
@@ -423,7 +527,6 @@ export const MedicinePage: React.FC = () => {
               </Box>
             </DialogTitle>
             <DialogContent>
-              {/* Image placeholder for remedy (backend can supply imageUrl later) */}
               <Box
                 sx={{
                   width: '100%',
@@ -434,10 +537,26 @@ export const MedicinePage: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  overflow: 'hidden',
                 }}
               >
-                <Healing sx={{ fontSize: 64, color: 'grey.400' }} />
+                {selectedRemedy.imageUrl ? (
+                  <Box
+                    component="img"
+                    src={selectedRemedy.imageUrl}
+                    alt=""
+                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <Healing sx={{ fontSize: 64, color: 'grey.400' }} />
+                )}
               </Box>
+              <Chip
+                label={categoryChip(selectedRemedy)}
+                size="small"
+                sx={{ mb: 2 }}
+                variant="outlined"
+              />
               <Typography variant="body1" paragraph>
                 {getText(selectedRemedy, 'description')}
               </Typography>

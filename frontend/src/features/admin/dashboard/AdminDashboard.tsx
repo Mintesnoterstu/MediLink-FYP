@@ -16,6 +16,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  TableContainer,
   Paper,
   Chip,
   Stack,
@@ -188,7 +189,17 @@ export const AdminDashboard: React.FC = () => {
   }, []);
 
   return (
-    <Box sx={{ px: { xs: 1, md: 2 }, pb: 6 }}>
+    <Box
+      sx={{
+        px: { xs: 1, md: 2 },
+        pb: 6,
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflowX: 'hidden',
+        boxSizing: 'border-box',
+      }}
+    >
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={800} gutterBottom sx={{ mb: 0 }}>
@@ -335,27 +346,29 @@ export const AdminDashboard: React.FC = () => {
                 ? 'እዚህ ቦታ ላይ የተግባር መዝገቦች ይታያሉ (API እስኪገናኝ ድረስ ማስመሰል ነው).'
                 : 'Entries below are mock data until API integration.'}
             </Typography>
-            <Table component={Paper} size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>{isAmharic ? 'ጊዜ' : 'Time'}</TableCell>
-                  <TableCell>{isAmharic ? 'ተግባር' : 'Action'}</TableCell>
-                  <TableCell>{isAmharic ? 'ተጠቃሚ' : 'Actor'}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell>2026-03-15 10:30</TableCell>
-                  <TableCell>{isAmharic ? 'ታካሚ ምዝገባ' : 'Patient registration'}</TableCell>
-                  <TableCell>{isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>2026-03-15 09:15</TableCell>
-                  <TableCell>{isAmharic ? 'ኦዲት ፍተሻ' : 'Audit check'}</TableCell>
-                  <TableCell>{isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+              <Table size="small" sx={{ minWidth: 280 }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>{isAmharic ? 'ጊዜ' : 'Time'}</TableCell>
+                    <TableCell>{isAmharic ? 'ተግባር' : 'Action'}</TableCell>
+                    <TableCell>{isAmharic ? 'ተጠቃሚ' : 'Actor'}</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>2026-03-15 10:30</TableCell>
+                    <TableCell>{isAmharic ? 'ታካሚ ምዝገባ' : 'Patient registration'}</TableCell>
+                    <TableCell>{isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>2026-03-15 09:15</TableCell>
+                    <TableCell>{isAmharic ? 'ኦዲት ፍተሻ' : 'Audit check'}</TableCell>
+                    <TableCell>{isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
           </CardContent>
         </Card>
       )}
@@ -809,43 +822,45 @@ export const AdminDashboard: React.FC = () => {
               <Typography variant="subtitle1" fontWeight={800} gutterBottom>
                 {isAmharic ? 'የቅርብ ጊዜ ምዝገባዎች' : 'Recent Registrations'}
               </Typography>
-              <Table component={Paper} size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>{isAmharic ? 'ሰዓት' : 'Time'} </TableCell>
-                    <TableCell>{isAmharic ? 'ስም' : 'Name'}</TableCell>
-                    <TableCell>
-                      {isAmharic ? 'የኢትዮጵያ የጤና መታወቂያ' : 'Ethiopian Health ID'}
-                    </TableCell>
-                    <TableCell>{isAmharic ? 'የመዘገበው' : 'Registered By'}</TableCell>
-                    <TableCell>{isAmharic ? 'አትም' : 'Print'}</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>10:30</TableCell>
-                    <TableCell>
-                      {isAmharic ? 'አልማዝ ከበደ' : 'Almaz Kebede'}
-                    </TableCell>
-                    <TableCell>ETH-2026-0315-AB123</TableCell>
-                    <TableCell>
-                      {isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}
-                    </TableCell>
-                    <TableCell>🖨️</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>09:15</TableCell>
-                    <TableCell>
-                      {isAmharic ? 'ተክሌ ኃይሉ' : 'Tekle Hailu'}
-                    </TableCell>
-                    <TableCell>ETH-2026-0315-CD456</TableCell>
-                    <TableCell>
-                      {isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}
-                    </TableCell>
-                    <TableCell>🖨️</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                <Table size="small" sx={{ minWidth: 520 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>{isAmharic ? 'ሰዓት' : 'Time'} </TableCell>
+                      <TableCell>{isAmharic ? 'ስም' : 'Name'}</TableCell>
+                      <TableCell>
+                        {isAmharic ? 'የኢትዮጵያ የጤና መታወቂያ' : 'Ethiopian Health ID'}
+                      </TableCell>
+                      <TableCell>{isAmharic ? 'የመዘገበው' : 'Registered By'}</TableCell>
+                      <TableCell>{isAmharic ? 'አትም' : 'Print'}</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>10:30</TableCell>
+                      <TableCell>
+                        {isAmharic ? 'አልማዝ ከበደ' : 'Almaz Kebede'}
+                      </TableCell>
+                      <TableCell>ETH-2026-0315-AB123</TableCell>
+                      <TableCell>
+                        {isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}
+                      </TableCell>
+                      <TableCell>🖨️</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>09:15</TableCell>
+                      <TableCell>
+                        {isAmharic ? 'ተክሌ ኃይሉ' : 'Tekle Hailu'}
+                      </TableCell>
+                      <TableCell>ETH-2026-0315-CD456</TableCell>
+                      <TableCell>
+                        {isAmharic ? 'ዶ/ር ተስፋዬ አየለ' : 'Dr. Tesfaye Ayele'}
+                      </TableCell>
+                      <TableCell>🖨️</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </CardContent>
           </Card>
         </Grid>

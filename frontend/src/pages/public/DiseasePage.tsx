@@ -213,20 +213,30 @@ export const DiseasePage: React.FC = () => {
         sx={{
           background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 60%, #2C3E50 100%)',
           color: 'white',
-          py: 6,
+          py: { xs: 4, sm: 6 },
+          px: { xs: 1.5, sm: 2 },
           textAlign: 'center',
         }}
       >
-        <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          fontWeight={700}
+          sx={{ fontSize: { xs: '1.65rem', sm: '2rem', md: '2.75rem' }, lineHeight: 1.2, px: 1 }}
+        >
           {heroTitle}
         </Typography>
       </Box>
 
-      <Box sx={{ maxWidth: 1400, mx: 'auto', p: 3 }}>
+      <Box sx={{ maxWidth: 1400, mx: 'auto', width: '100%', p: { xs: 2, sm: 3 }, boxSizing: 'border-box' }}>
         <Paper elevation={2} sx={{ mb: 4, borderRadius: 3 }}>
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
@@ -239,7 +249,7 @@ export const DiseasePage: React.FC = () => {
           </Tabs>
 
           {activeTab === 'quick-search' && (
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: { xs: 2, sm: 3 } }}>
               <Stack spacing={3}>
                 <TextField
                   fullWidth
@@ -324,7 +334,7 @@ export const DiseasePage: React.FC = () => {
           )}
 
           {activeTab === 'advanced-filter' && (
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: { xs: 2, sm: 3 }, overflowX: 'hidden' }}>
               <Typography variant="h6" gutterBottom fontWeight={700} sx={{ color: '#4A90E2', mb: 2 }}>
                 {t('advancedFilters')}
               </Typography>

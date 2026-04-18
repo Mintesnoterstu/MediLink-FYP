@@ -119,7 +119,19 @@ export const PatientDashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ fontSize: '1.05rem', '& .MuiTypography-body1': { fontSize: '1.05rem' }, '& .MuiTypography-body2': { fontSize: '1rem' }, '& .MuiTypography-h5': { fontSize: '1.35rem' }, '& .MuiTypography-h6': { fontSize: '1.15rem' } }}>
+    <Box
+      sx={{
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        overflowX: 'hidden',
+        fontSize: '1.05rem',
+        '& .MuiTypography-body1': { fontSize: '1.05rem' },
+        '& .MuiTypography-body2': { fontSize: '1rem' },
+        '& .MuiTypography-h5': { fontSize: '1.35rem' },
+        '& .MuiTypography-h6': { fontSize: '1.15rem' },
+      }}
+    >
       <Card sx={{ borderRadius: { xs: 2, md: 3 }, border: '1px solid', borderColor: 'divider', mb: 2 }}>
         <CardContent sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: { xs: 'flex-start', md: 'center' }, justifyContent: 'space-between', gap: 2, py: { xs: 2, md: 3 }, px: { xs: 2, md: 3 } }}>
           <Box display="flex" alignItems="center" gap={1}>

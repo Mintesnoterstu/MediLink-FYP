@@ -171,7 +171,18 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
         )}
 
         {/* Right: Actions - kept on the right when responsive */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 }, ml: 'auto', flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 0.5, sm: 1 },
+            ml: 'auto',
+            flexShrink: 1,
+            minWidth: 0,
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+          }}
+        >
           {/* Language Selector */}
           <LanguageSelector />
 
@@ -214,12 +225,17 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
 
           {/* Auth Buttons / User Profile Menu */}
           {!isAuthenticated ? (
-            <Box display="flex" gap={1} flexWrap="nowrap">
+            <Box display="flex" gap={0.5} flexWrap="wrap" justifyContent="flex-end">
               <Button
                 color="inherit"
                 startIcon={<Login />}
                 onClick={() => navigate('/login')}
-                sx={{ fontFamily: 'inherit', minWidth: { xs: 0, sm: 'auto' } }}
+                sx={{
+                  fontFamily: 'inherit',
+                  minWidth: { xs: 0, sm: 'auto' },
+                  px: { xs: 1, sm: 2 },
+                  fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                }}
               >
                 {t('auth.login')}
               </Button>
@@ -232,6 +248,9 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                   borderColor: 'rgba(255, 255, 255, 0.5)',
                   color: 'white',
                   minWidth: { xs: 0, sm: 'auto' },
+                  px: { xs: 1, sm: 2 },
+                  fontSize: { xs: '0.7rem', sm: '0.875rem' },
+                  display: { xs: 'none', sm: 'inline-flex' },
                   '&:hover': {
                     borderColor: 'white',
                     bgcolor: 'rgba(255, 255, 255, 0.1)',
@@ -362,8 +381,14 @@ export const UniversalHeader: React.FC<UniversalHeaderProps> = ({
         anchor="left"
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: 'min(100vw - 48px, 320px)', sm: 280 },
+            maxWidth: '100vw',
+          },
+        }}
       >
-        <Box sx={{ width: 250, pt: 2 }}>
+        <Box sx={{ width: '100%', pt: 2 }}>
           <List>
             {navItems.map((item) => (
               <ListItem

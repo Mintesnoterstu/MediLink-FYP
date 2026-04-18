@@ -152,24 +152,37 @@ export const AboutPage: React.FC = () => {
         sx={{
           background: 'linear-gradient(135deg, #4eb6f2 0%, #4A90E2 55%, #1F2937 100%)',
           color: 'white',
-          py: 7,
+          py: { xs: 5, sm: 7 },
+          px: { xs: 1.5, sm: 2 },
           textAlign: 'center',
         }}
       >
-        <Container>
-          <Typography variant="h3" component="h1" gutterBottom fontWeight={700}>
+        <Container sx={{ px: { xs: 1, sm: 2 } }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            fontWeight={700}
+            sx={{ fontSize: { xs: '1.65rem', sm: '2rem', md: '2.75rem' }, lineHeight: 1.2 }}
+          >
             {L(hero.title)}
           </Typography>
-          <Typography variant="h6" sx={{ opacity: 0.9 }}>
+          <Typography variant="h6" sx={{ opacity: 0.9, fontSize: { xs: '0.95rem', sm: '1.1rem' } }}>
             {L(hero.subtitle)}
           </Typography>
         </Container>
       </Box>
 
-      <Container sx={{ py: 6 }}>
+      <Container sx={{ py: { xs: 4, sm: 6 }, px: { xs: 2, sm: 3 } }}>
         {/* Section 2: What is MediLink */}
         <Box sx={{ mb: 6 }}>
-          <Typography variant="h4" component="h2" gutterBottom fontWeight={700} sx={{ color: '#4A90E2', mb: 2 }}>
+          <Typography
+            variant="h4"
+            component="h2"
+            gutterBottom
+            fontWeight={700}
+            sx={{ color: '#4A90E2', mb: 2, fontSize: { xs: '1.35rem', sm: '1.6rem', md: '2rem' } }}
+          >
             {isAmharic ? 'ሜድሊንክ ምንድነው?' : 'What is MediLink?'}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, maxWidth: 800 }}>

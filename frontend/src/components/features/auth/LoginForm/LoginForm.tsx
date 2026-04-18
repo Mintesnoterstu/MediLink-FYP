@@ -37,8 +37,26 @@ export const LoginForm: React.FC = () => {
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 400, mx: 'auto', mt: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom fontWeight={700} textAlign="center">
+    <Box
+      component="form"
+      onSubmit={handleSubmit}
+      sx={{
+        width: '100%',
+        maxWidth: 400,
+        mx: 'auto',
+        mt: { xs: 2, sm: 4 },
+        px: { xs: 2, sm: 0 },
+        boxSizing: 'border-box',
+      }}
+    >
+      <Typography
+        variant="h4"
+        component="h1"
+        gutterBottom
+        fontWeight={700}
+        textAlign="center"
+        sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}
+      >
         {t('auth.login')}
       </Typography>
 
