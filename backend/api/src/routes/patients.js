@@ -8,6 +8,8 @@ import { requireRole } from '../middleware/rbac.js';
 import { validateBody } from '../middleware/validation.js';
 import { withRequestSession } from '../utils/dbSession.js';
 import { encryptJson, decryptJson } from '../utils/encryption.js';
+import { sendCredentialsSms } from '../services/smsService.js';
+import { withMedilinkSession } from '../config/database.js';
 
 const router = Router();
 
@@ -16,12 +18,23 @@ const registerSchema = Joi.object({
   email: Joi.string().email().required(),
   phone: Joi.string().min(8).required(),
   fullName: Joi.string().min(2).required(),
-  ethiopianHealthId: Joi.string().min(6).required(),
+  ethiopianHealthId: Joi.string().min(6).optional(),
   dateOfBirth: Joi.string().isoDate().optional(),
   gender: Joi.string().valid('male', 'female', 'other').optional(),
   facilityId: Joi.string().uuid().optional(),
   encryptedData: Joi.object().default({}),
 });
+
+function generateEthiopianHealthId() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const rand = () => chars[Math.floor(Math.random() * chars.length)];
+  const suffix = `${rand()}${rand()}${Math.floor(100 + Math.random() * 900)}`;
+  return `ETH-${yyyy}-${mm}${dd}-${suffix}`;
+}
 
 router.post(
   '/register',
@@ -37,9 +50,34 @@ router.post(
       const encryptedBlob = encryptJson(body.encryptedData || {});
 
       const result = await withRequestSession(req, async (client) => {
-        const effectiveFacilityId = body.facilityId || req.user.facility_id;
+        let effectiveFacilityId = body.facilityId || null;
+        if (!effectiveFacilityId) {
+          const adminRow = await client.query(
+            'SELECT facility_id FROM users WHERE id = $1 LIMIT 1',
+            [req.user.id],
+          );
+          effectiveFacilityId = adminRow.rows[0]?.facility_id || null;
+        }
         if (!effectiveFacilityId) {
           throw new Error('facilityId is required for patient registration');
+        }
+
+        let ethiopianHealthId = body.ethiopianHealthId || '';
+        if (!ethiopianHealthId) {
+          for (let i = 0; i < 5; i += 1) {
+            const candidate = generateEthiopianHealthId();
+            const exists = await client.query(
+              'SELECT 1 FROM patients WHERE ethiopian_health_id = $1 LIMIT 1',
+              [candidate],
+            );
+            if (!exists.rows[0]) {
+              ethiopianHealthId = candidate;
+              break;
+            }
+          }
+        }
+        if (!ethiopianHealthId) {
+          throw new Error('Failed to generate Ethiopian Health ID');
         }
         // Create user
         const u = await client.query(
@@ -63,7 +101,7 @@ router.post(
         `,
           [
             user.id,
-            body.ethiopianHealthId,
+            ethiopianHealthId,
             body.dateOfBirth || null,
             body.gender || null,
             encryptedBlob,
@@ -72,12 +110,19 @@ router.post(
           ],
         );
 
-        return { user, patient: p.rows[0] };
+        return { user, patient: p.rows[0], ethiopianHealthId };
       });
 
-      // For real deployments: deliver temp password via secure channel.
+      await sendCredentialsSms(body.phone, {
+        email: body.email,
+        tempPassword,
+        ethiopianHealthId: result.ethiopianHealthId,
+      });
+
       return res.status(201).json({
-        ...result,
+        user: result.user,
+        patient: result.patient,
+        ethiopianHealthId: result.ethiopianHealthId,
         tempPassword,
       });
     } catch (err) {
@@ -86,23 +131,35 @@ router.post(
   },
 );
 
-router.get('/search', authRequired, requireRole('doctor'), async (req, res, next) => {
+router.get('/search', authRequired, requireRole('doctor', 'nurse'), async (req, res, next) => {
   try {
     const q = String(req.query.q || '').trim();
     if (q.length < 2) return res.json([]);
 
-    const rows = await withRequestSession(req, async (client) => {
-      // RLS will ensure doctor only sees consented patients.
+    const rows = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+      // Search must include non-consented patients so doctors can request consent.
+      // Limit data to non-clinical identity fields only.
       const r = await client.query(
         `
-        SELECT p.id, p.ethiopian_health_id, p.created_at, u.full_name
+        SELECT
+          p.id,
+          p.ethiopian_health_id,
+          p.created_at,
+          u.full_name,
+          EXISTS (
+            SELECT 1
+            FROM consents c
+            WHERE c.patient_id = p.id
+              AND c.doctor_id = $2
+              AND c.status = 'active'
+          ) AS has_active_consent
         FROM patients p
         JOIN users u ON u.id = p.user_id
         WHERE p.ethiopian_health_id ILIKE $1 OR u.full_name ILIKE $1
         ORDER BY u.full_name ASC
         LIMIT 25
       `,
-        [`%${q}%`],
+        [`%${q}%`, req.user.id],
       );
       return r.rows;
     });

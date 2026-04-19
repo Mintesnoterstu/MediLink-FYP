@@ -9,13 +9,24 @@ import { withMedilinkSession } from '../config/database.js';
 
 const router = Router();
 
+const ADMIN_CHILD_ROLE = {
+  zonal_admin: 'woreda_admin',
+  woreda_admin: 'facility_admin',
+  facility_admin: null,
+};
+
+function assertAllowedAdminCreation(actorRole, targetRole) {
+  const allowed = ADMIN_CHILD_ROLE[actorRole] || null;
+  return allowed === targetRole;
+}
+
 // Create sub-admin (next level down). Enforced in API layer (admins still cannot access patient data due to RLS).
 const createUserSchema = Joi.object({
   email: Joi.string().email().required(),
   phone: Joi.string().min(8).optional(),
   fullName: Joi.string().min(2).required(),
   role: Joi.string()
-    .valid('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin')
+    .valid('woreda_admin', 'facility_admin')
     .required(),
   zoneId: Joi.string().uuid().optional(),
   woredaId: Joi.string().uuid().optional(),
@@ -31,15 +42,26 @@ router.post(
   async (req, res, next) => {
     try {
       const b = req.validatedBody;
+      if (!assertAllowedAdminCreation(req.user.role, b.role)) {
+        return res.status(403).json({ error: 'You can only create next-level admins' });
+      }
       const hash = await bcrypt.hash(b.password, 10);
       const created = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+        const actorRow = await client.query(
+          'SELECT zone_id, woreda_id, facility_id FROM users WHERE id = $1 LIMIT 1',
+          [req.user.id],
+        );
+        const actor = actorRow.rows[0] || {};
+        const zoneId = b.zoneId || actor.zone_id || null;
+        const woredaId = b.woredaId || actor.woreda_id || null;
+        const facilityId = b.facilityId || actor.facility_id || null;
         const r = await client.query(
           `
           INSERT INTO users (email, phone, password_hash, full_name, role, zone_id, woreda_id, facility_id, created_by, two_factor_enabled)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true)
           RETURNING id, email, full_name, role
         `,
-          [b.email, b.phone || null, hash, b.fullName, b.role, b.zoneId || null, b.woredaId || null, b.facilityId || null, req.user.id],
+          [b.email, b.phone || null, hash, b.fullName, b.role, zoneId, woredaId, facilityId, req.user.id],
         );
         return r.rows[0];
       });
@@ -53,7 +75,7 @@ router.post(
 router.get(
   '/users',
   authRequired,
-  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  requireRole('zonal_admin', 'woreda_admin', 'facility_admin'),
   async (req, res, next) => {
     try {
       const rows = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
@@ -61,7 +83,7 @@ router.get(
           `
           SELECT id, email, phone, full_name, role, is_active, created_at
           FROM users
-          WHERE role IN ('zonal_admin','woreda_admin','city_admin','facility_admin')
+          WHERE role IN ('zonal_admin','woreda_admin','facility_admin')
           ORDER BY created_at DESC
           LIMIT 200
         `,
@@ -78,7 +100,7 @@ router.get(
 router.put(
   '/users/:id/suspend',
   authRequired,
-  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  requireRole('zonal_admin', 'woreda_admin', 'facility_admin'),
   async (req, res, next) => {
     try {
       const userId = req.params.id;
@@ -105,7 +127,7 @@ const facilitySchema = Joi.object({
 router.post(
   '/facilities',
   authRequired,
-  requireRole('woreda_admin', 'city_admin', 'zonal_admin'),
+  requireRole('woreda_admin', 'zonal_admin'),
   validateBody(facilitySchema),
   async (req, res, next) => {
     try {
@@ -150,6 +172,15 @@ router.post(
       const b = req.validatedBody;
       const hash = await bcrypt.hash(b.password, 10);
       const created = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+        const actorRow = await client.query('SELECT facility_id FROM users WHERE id = $1 LIMIT 1', [req.user.id]);
+        const actorFacilityId = actorRow.rows[0]?.facility_id || null;
+        const facilityId = actorFacilityId || b.facilityId;
+        if (!facilityId) {
+          throw new Error('facilityId is required');
+        }
+        if (actorFacilityId && b.facilityId && b.facilityId !== actorFacilityId) {
+          throw new Error('Facility admin can only create professionals in their facility');
+        }
         const r = await client.query(
           `
           INSERT INTO users (
@@ -159,7 +190,7 @@ router.post(
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true)
           RETURNING id, email, full_name, role, facility_id
         `,
-          [b.email, b.phone || null, hash, b.fullName, b.role, b.facilityId, b.licenseNumber, b.specialization || null, req.user.id],
+          [b.email, b.phone || null, hash, b.fullName, b.role, facilityId, b.licenseNumber, b.specialization || null, req.user.id],
         );
         return r.rows[0];
       });
@@ -173,7 +204,7 @@ router.post(
 router.get(
   '/statistics',
   authRequired,
-  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  requireRole('zonal_admin', 'woreda_admin', 'facility_admin'),
   async (req, res, next) => {
     try {
       const stats = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
@@ -191,7 +222,7 @@ router.get(
 router.get(
   '/audit',
   authRequired,
-  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  requireRole('zonal_admin', 'woreda_admin', 'facility_admin'),
   async (req, res, next) => {
     try {
       // metadata only

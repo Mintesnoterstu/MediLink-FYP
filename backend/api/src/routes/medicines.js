@@ -7,7 +7,7 @@ import { withRequestSession } from '../utils/dbSession.js';
 
 const router = Router();
 
-router.get('/', authRequired, async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     const r = await query('SELECT * FROM medicines ORDER BY name ASC');
     return res.json(r.rows);
@@ -16,7 +16,7 @@ router.get('/', authRequired, async (req, res, next) => {
   }
 });
 
-router.get('/:id', authRequired, async (req, res, next) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const idOrSlug = req.params.id;
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(

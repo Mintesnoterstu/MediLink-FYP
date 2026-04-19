@@ -85,6 +85,7 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
       return res.json({
         requires2fa: true,
         challengeToken,
+        ...(process.env.NODE_ENV === 'production' ? {} : { devOtp: otp }),
         user: {
           id: user.id,
           email: user.email,

@@ -21,11 +21,12 @@ import {
   Alert,
   InputAdornment,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
 import { Search, VerifiedUser, LocalHospital, Healing, Info, Clear } from '@mui/icons-material';
 import { useUI } from '@/contexts/UIContext';
 import { VerifiedRemedy } from '@/types';
-import { mockSelfCareRemedies } from '@/data/medicinesData';
+import { catalogService } from '@/services/catalogService';
 
 const bodyParts = [
   { id: 'skin', label: 'Skin', labelAm: 'ቆዳ', icon: <Healing /> },
@@ -86,6 +87,29 @@ export const MedicinePage: React.FC = () => {
     rx: 6,
     trad: 6,
   });
+  const [remedies, setRemedies] = useState<VerifiedRemedy[]>([]);
+  const [loadingRemedies, setLoadingRemedies] = useState(true);
+  const [remediesError, setRemediesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadMedicines = async () => {
+      try {
+        setLoadingRemedies(true);
+        setRemediesError(null);
+        const rows = await catalogService.getMedicines();
+        if (active) setRemedies(rows);
+      } catch (error: any) {
+        if (active) setRemediesError(error?.message || 'Failed to load medicines');
+      } finally {
+        if (active) setLoadingRemedies(false);
+      }
+    };
+    loadMedicines();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const getText = (
     r: VerifiedRemedy,
@@ -107,7 +131,7 @@ export const MedicinePage: React.FC = () => {
   };
 
   const filteredRemedies = useMemo(() => {
-    let filtered = mockSelfCareRemedies;
+    let filtered = remedies;
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -129,7 +153,7 @@ export const MedicinePage: React.FC = () => {
     }
 
     return filtered;
-  }, [searchQuery, selectedBodyPart, selectedHealthGoal]);
+  }, [searchQuery, selectedBodyPart, selectedHealthGoal, remedies]);
 
   const otcMedicines = useMemo(
     () => filteredRemedies.filter((r) => r.category === 'modern'),
@@ -212,6 +236,16 @@ export const MedicinePage: React.FC = () => {
       </Box>
 
       <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%', p: { xs: 2, sm: 3 }, boxSizing: 'border-box' }}>
+        {loadingRemedies ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : null}
+        {remediesError ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {remediesError}
+          </Alert>
+        ) : null}
         <TextField
           fullWidth
           placeholder={searchPlaceholder}

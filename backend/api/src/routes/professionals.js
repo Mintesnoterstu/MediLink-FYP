@@ -33,6 +33,8 @@ router.get('/patients', authRequired, requireRole('doctor', 'nurse'), async (req
 const requestConsentSchema = Joi.object({
   patientId: Joi.string().uuid().required(),
   reason: Joi.string().allow('').optional(),
+  scope: Joi.object().optional(),
+  durationDays: Joi.number().integer().min(1).max(365).optional(),
 });
 
 router.post(
@@ -50,7 +52,7 @@ router.post(
           VALUES ($1, $2, 'pending', $3)
           RETURNING *
         `,
-          [b.patientId, req.user.id, b.reason || null],
+          [b.patientId, req.user.id, b.reason || `Access request (${b.durationDays || 30} days)`],
         );
         return r.rows[0];
       });
@@ -117,6 +119,13 @@ router.post(
         `,
           [b.patientId, req.user.id],
         );
+        await client.query(
+          `
+          INSERT INTO consent_requests (patient_id, doctor_id, status, reason)
+          VALUES ($1, $2, 'pending', 'Record updated, patient re-approval required')
+        `,
+          [b.patientId, req.user.id],
+        );
         return r.rows[0];
       });
 
@@ -157,6 +166,13 @@ router.put(
           UPDATE consents
           SET status='pending', auto_revoked=true, revoked_at=now()
           WHERE patient_id = $1 AND doctor_id = $2 AND status='active'
+        `,
+          [row.patient_id, req.user.id],
+        );
+        await client.query(
+          `
+          INSERT INTO consent_requests (patient_id, doctor_id, status, reason)
+          VALUES ($1, $2, 'pending', 'Record updated, patient re-approval required')
         `,
           [row.patient_id, req.user.id],
         );

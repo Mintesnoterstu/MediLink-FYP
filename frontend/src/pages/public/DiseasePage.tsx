@@ -23,12 +23,14 @@ import {
   Paper,
   Stack,
   IconButton,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { Search, LocalHospital, CheckCircle, Clear } from '@mui/icons-material';
 import { Disease, DiseaseCategory } from '@/types';
 import { BodyMap } from '@/components/ui/body-map/BodyMap';
 import { useUI } from '@/contexts/UIContext';
-import { mockDiseases } from '@/data/diseasesData';
+import { catalogService } from '@/services/catalogService';
 import { DiseaseSymptomsVideoSection } from '@/components/features/public/DiseaseLibrary/DiseaseSymptomsVideoSection';
 
 const diseaseCategories: Array<{ value: DiseaseCategory | 'all'; label: string; labelAm: string }> = [
@@ -71,9 +73,29 @@ export const DiseasePage: React.FC = () => {
   const [selectedBodyRegions, setSelectedBodyRegions] = useState<string[]>([]);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [visibleCount, setVisibleCount] = useState(9);
+  const [diseases, setDiseases] = useState<Disease[]>([]);
+  const [loadingDiseases, setLoadingDiseases] = useState(true);
+  const [diseasesError, setDiseasesError] = useState<string | null>(null);
 
-  // Diseases: mock data for now; more diseases will be loaded from backend/API when available
-  const diseases = mockDiseases;
+  useEffect(() => {
+    let active = true;
+    const loadDiseases = async () => {
+      try {
+        setLoadingDiseases(true);
+        setDiseasesError(null);
+        const rows = await catalogService.getDiseases();
+        if (active) setDiseases(rows);
+      } catch (error: any) {
+        if (active) setDiseasesError(error?.message || 'Failed to load diseases');
+      } finally {
+        if (active) setLoadingDiseases(false);
+      }
+    };
+    loadDiseases();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const getText = (d: Disease, field: 'description' | 'symptoms' | 'causes' | 'prevention' | 'treatment' | 'seasonal') => {
     if (isAmharic) {
@@ -230,6 +252,16 @@ export const DiseasePage: React.FC = () => {
       </Box>
 
       <Box sx={{ maxWidth: 1400, mx: 'auto', width: '100%', p: { xs: 2, sm: 3 }, boxSizing: 'border-box' }}>
+        {loadingDiseases ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : null}
+        {diseasesError ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {diseasesError}
+          </Alert>
+        ) : null}
         <Paper elevation={2} sx={{ mb: 4, borderRadius: 3 }}>
           <Tabs
             value={activeTab}
