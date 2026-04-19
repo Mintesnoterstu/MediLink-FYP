@@ -53,14 +53,27 @@ These work when frontend points to the backend API (for example `VITE_API_BASE_U
 - **Zonal Admin**: `zonal.admin@medilink.demo`
 - **Woreda Admin**: `woreda.admin@medilink.demo`
 - **Facility Admin**: `facility.admin@medilink.demo`
+- **City Admin**: `hiwot.a@jimmacity.gov.et`
+
+### Real Government/Facility Admin Accounts (FYP)
+- **Zonal Admin**: `abdi.m@jimmazone.gov.et` / `password`
+- **Woreda Admin (Jimma)**: `sara.m@jimmaworeda.gov.et` / `password`
+- **City Admin (Jimma City)**: `hiwot.a@jimmacity.gov.et` / `password`
+- **Facility Admin (Jimma Hospital)**: `tesfaye.a@jimmahosp.gov.et` / `password`
+- **Facility Admin (Seka Health Center)**: `hawa.a@sekahc.gov.et` / `password`
 
 ### Professional Accounts
-- **Doctor**: `doctor1@medilink.demo`
-- **Doctor**: `doctor2@medilink.demo`
+- **Doctor**: `doctor1@medilink.demo` / `password`
+- **Doctor**: `doctor2@medilink.demo` / `password`
+- **Dr. Tadesse Bekele**: `tadesse.b@jimmahosp.gov.et` / `password`
+- **Dr. Abebech Mohammed**: `abebech.m@jimmahosp.gov.et` / `password`
+- **Nurse Alemitu Hailu**: `alemit.h@jimmahosp.gov.et` / `password`
 
 ### Patient Accounts
-- **Patient**: `patient1@medilink.demo`
-- **Patient**: `patient2@medilink.demo`
+- **Patient**: `patient1@medilink.demo` / `password`
+- **Patient**: `patient2@medilink.demo` / `password`
+- **Almaz Kebede**: `almaz.k@medilink.patient` / `password`
+- **Tekle Hailu**: `tekle.h@medilink.patient` / `password`
 
 ---
 
@@ -79,3 +92,4 @@ These work when frontend points to the backend API (for example `VITE_API_BASE_U
 - Mock mode accounts are defined in `src/features/auth/services/authService.ts`.
 - Real backend accounts are inserted by `database/migrations/004_seed_demo_users.up.sql`.
 - If you changed credentials or reset passwords, update this file accordingly.
+- Default password for all seeded real backend accounts above is `password` unless changed.

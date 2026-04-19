@@ -13,6 +13,12 @@ const router = Router();
 const OTP_TTL_MINUTES = 10;
 const RESET_TTL_MINUTES = 30;
 
+function mapRoleForFrontend(role) {
+  if (role === 'patient') return 'patient';
+  if (role === 'doctor' || role === 'nurse') return 'provider';
+  return 'admin';
+}
+
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
@@ -83,7 +89,8 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
           id: user.id,
           email: user.email,
           name: user.full_name,
-          role: user.role,
+          role: mapRoleForFrontend(user.role),
+          backendRole: user.role,
           phone: user.phone,
         },
       });
@@ -101,7 +108,8 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
         id: user.id,
         email: user.email,
         name: user.full_name,
-        role: user.role,
+        role: mapRoleForFrontend(user.role),
+        backendRole: user.role,
       },
     });
   } catch (err) {
@@ -163,7 +171,8 @@ router.post('/verify-2fa', validateBody(verify2faSchema), async (req, res, next)
         id: user.id,
         email: user.email,
         name: user.full_name,
-        role: user.role,
+        role: mapRoleForFrontend(user.role),
+        backendRole: user.role,
       },
     });
   } catch (err) {
@@ -318,7 +327,13 @@ router.post('/register', validateBody(registerSchema), async (req, res, next) =>
     });
     return res.status(201).json({
       token,
-      user: { id: user.id, email: user.email, name: user.full_name, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.full_name,
+        role: mapRoleForFrontend(user.role),
+        backendRole: user.role,
+      },
     });
   } catch (err) {
     return next(err);
@@ -346,7 +361,8 @@ router.patch('/users/:userId', authRequired, async (req, res, next) => {
       id: r.rows[0].id,
       email: r.rows[0].email,
       name: r.rows[0].full_name,
-      role: r.rows[0].role,
+      role: mapRoleForFrontend(r.rows[0].role),
+      backendRole: r.rows[0].role,
       language: language || 'en',
     });
   } catch (err) {

@@ -19,6 +19,8 @@ const filesInOrder = [
   '006_seed_full_catalog_minimums.up.sql',
   '007_patient_tracking_tables.up.sql',
   '008_auth_security_tables.up.sql',
+  '009_seed_real_admin_accounts.up.sql',
+  '010_seed_real_clinical_accounts.up.sql',
 ];
 
 const databaseUrl = process.env.DATABASE_URL;
