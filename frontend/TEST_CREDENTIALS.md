@@ -1,58 +1,81 @@
 # MediLink Test Credentials
 
-## Development Mode Test Accounts
+This project supports two login modes:
 
-The application includes mock authentication for development/testing purposes. Use these credentials to log in:
+1. **Frontend mock mode** (no backend API configured)
+2. **Real backend mode** (PostgreSQL + Express API)
+
+---
+
+## 1) Frontend Mock Mode Accounts
+
+These work when `VITE_API_BASE_URL` is **not** set.
 
 ### Patient Account
 - **Email:** `patient@medilink.test`
 - **Password:** `patient123`
 - **Role:** Patient
-- **Access:** Health Dashboard, Symptom Tracker, Medication Manager, Appointments
 
 ### Provider Account
 - **Email:** `provider@medilink.test`
 - **Password:** `provider123`
 - **Role:** Healthcare Provider
-- **Access:** Provider Dashboard, Patient Finder, Medical Records Viewer, Consent Manager
 
 ### Zonal Admin Account
 - **Email:** `admin@medilink.test`
 - **Password:** `admin123`
 - **Role:** Administrator (Zonal)
-- **Access:** System Analytics, User Management, Content Curator
 
 ### Woreda Admin Account
 - **Email:** `woredaadmin@medilink.test`
 - **Password:** `admin123`
 - **Role:** Administrator (Woreda)
-- **Access:** Facility Management, Woreda-level admin workflow
 
 ### City Admin Account
 - **Email:** `cityadmin@medilink.test`
 - **Password:** `admin123`
 - **Role:** Administrator (City)
-- **Access:** City-level facility and admin workflow
 
 ### Facility Admin Account
 - **Email:** `facilityadmin@medilink.test`
 - **Password:** `admin123`
 - **Role:** Administrator (Facility)
-- **Access:** Professional Management, Patient Registration
 
-## Notes
+---
 
-- These credentials work in **development mode** only (when `VITE_API_BASE_URL` is not set)
-- In production, you'll need to register accounts through the registration form or use your backend API
-- All test accounts use English (`en`) as the default language
-- Available mock login accounts come from `src/features/auth/services/authService.ts`
-- You can also register new accounts using the registration form at `/register`
+## 2) Real Backend Seed Accounts
+
+These work when frontend points to the backend API (for example `VITE_API_BASE_URL=http://localhost:3001/api`) and database seeds are applied.
+
+> Default seeded password for these users: `password`
+
+### Admin Accounts
+- **Zonal Admin**: `zonal.admin@medilink.demo`
+- **Woreda Admin**: `woreda.admin@medilink.demo`
+- **Facility Admin**: `facility.admin@medilink.demo`
+
+### Professional Accounts
+- **Doctor**: `doctor1@medilink.demo`
+- **Doctor**: `doctor2@medilink.demo`
+
+### Patient Accounts
+- **Patient**: `patient1@medilink.demo`
+- **Patient**: `patient2@medilink.demo`
+
+---
 
 ## Quick Start
 
-1. Start the development server: `npm run dev`
-2. Navigate to `/login`
-3. Use any of the test credentials above
-4. You'll be automatically logged in and redirected to the dashboard
+1. Start backend API on port `3001`
+2. Set frontend `.env` with: `VITE_API_BASE_URL=http://localhost:3001/api`
+3. Start frontend: `npm run dev`
+4. Open `/login`
+5. Use one of the **Real Backend Seed Accounts** above
 
+---
 
+## Notes
+
+- Mock mode accounts are defined in `src/features/auth/services/authService.ts`.
+- Real backend accounts are inserted by `database/migrations/004_seed_demo_users.up.sql`.
+- If you changed credentials or reset passwords, update this file accordingly.
