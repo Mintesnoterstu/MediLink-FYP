@@ -37,6 +37,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useUI } from '@/contexts/UIContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { authService } from '@/features/auth/services/authService';
 
 export const ProfessionalDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -48,6 +49,7 @@ export const ProfessionalDashboard: React.FC = () => {
   const [tab, setTab] = React.useState(0);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
+  const [isSavingSettings, setIsSavingSettings] = React.useState(false);
 
   const name = user?.name || (isAmharic ? 'ዶ/ር ታደሰ በቀለ' : 'Dr. Tadesse Bekele');
 
@@ -79,6 +81,16 @@ export const ProfessionalDashboard: React.FC = () => {
   const handleMenuClick = (fn: () => void) => {
     setDrawerOpen(false);
     fn();
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user?.id) return;
+    try {
+      setIsSavingSettings(true);
+      await authService.updateUser(user.id, { name });
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   return (
@@ -483,7 +495,9 @@ export const ProfessionalDashboard: React.FC = () => {
                     defaultValue={isAmharic ? 'ሰኞ-አርብ 08:00-17:00' : 'Mon–Fri 08:00–17:00'}
                   />
                   <Divider />
-                  <Button variant="contained">{isAmharic ? 'አስቀምጥ' : 'Save'}</Button>
+                  <Button variant="contained" onClick={handleSaveSettings} disabled={isSavingSettings}>
+                    {isAmharic ? 'አስቀምጥ' : 'Save'}
+                  </Button>
                 </Stack>
               </CardContent>
             </Card>

@@ -19,7 +19,7 @@ const registerSchema = Joi.object({
   ethiopianHealthId: Joi.string().min(6).required(),
   dateOfBirth: Joi.string().isoDate().optional(),
   gender: Joi.string().valid('male', 'female', 'other').optional(),
-  facilityId: Joi.string().uuid().required(),
+  facilityId: Joi.string().uuid().optional(),
   encryptedData: Joi.object().default({}),
 });
 
@@ -37,6 +37,10 @@ router.post(
       const encryptedBlob = encryptJson(body.encryptedData || {});
 
       const result = await withRequestSession(req, async (client) => {
+        const effectiveFacilityId = body.facilityId || req.user.facility_id;
+        if (!effectiveFacilityId) {
+          throw new Error('facilityId is required for patient registration');
+        }
         // Create user
         const u = await client.query(
           `
@@ -44,7 +48,7 @@ router.post(
           VALUES ($1, $2, $3, $4, 'patient', $5, $6, true)
           RETURNING id, email, phone, full_name, role
         `,
-          [body.email, body.phone, passwordHash, body.fullName, body.facilityId, req.user.id],
+          [body.email, body.phone, passwordHash, body.fullName, effectiveFacilityId, req.user.id],
         );
 
         const user = u.rows[0];
@@ -63,7 +67,7 @@ router.post(
             body.dateOfBirth || null,
             body.gender || null,
             encryptedBlob,
-            body.facilityId,
+            effectiveFacilityId,
             req.user.id,
           ],
         );

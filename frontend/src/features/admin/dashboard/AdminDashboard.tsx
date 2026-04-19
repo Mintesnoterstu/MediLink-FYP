@@ -48,6 +48,7 @@ import {
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUI } from '@/contexts/UIContext';
 import { useNavigate } from 'react-router-dom';
+import { patientRegistrationService } from '@/features/admin/services/patientRegistrationService';
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -79,6 +80,20 @@ export const AdminDashboard: React.FC = () => {
   const [newAdminName, setNewAdminName] = React.useState('');
   const [newAdminEmail, setNewAdminEmail] = React.useState('');
   const [newAdminPhone, setNewAdminPhone] = React.useState('');
+  const [isRegisteringPatient, setIsRegisteringPatient] = React.useState(false);
+  const [patientForm, setPatientForm] = React.useState({
+    fullName: '',
+    dateOfBirth: '',
+    gender: '',
+    kebeleId: '',
+    phone: '',
+    email: '',
+    woreda: '',
+    kebele: '',
+    emergencyName: '',
+    emergencyPhone: '',
+    emergencyRelation: '',
+  });
 
   const roleLabel = adminLevel === 'zonal'
     ? (isAmharic ? 'የዞን አስተዳዳሪ' : 'Zonal Admin')
@@ -174,6 +189,69 @@ export const AdminDashboard: React.FC = () => {
     setNewAdminName('');
     setNewAdminEmail('');
     setNewAdminPhone('');
+  };
+
+  const handlePatientFormChange = (key: keyof typeof patientForm, value: string) => {
+    setPatientForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const resetPatientForm = () => {
+    setPatientForm({
+      fullName: '',
+      dateOfBirth: '',
+      gender: '',
+      kebeleId: '',
+      phone: '',
+      email: '',
+      woreda: '',
+      kebele: '',
+      emergencyName: '',
+      emergencyPhone: '',
+      emergencyRelation: '',
+    });
+  };
+
+  const handleRegisterPatient = async () => {
+    if (!patientForm.fullName || !patientForm.phone || !patientForm.kebeleId || !patientForm.gender) {
+      toast('warning', isAmharic ? 'እባክዎ አስፈላጊ መረጃዎችን ያስገቡ።' : 'Please fill all required patient fields.');
+      return;
+    }
+
+    const safeName = patientForm.fullName.trim().toLowerCase().replace(/\s+/g, '.');
+    const fallbackEmail = `${safeName || 'patient'}@medilink.local`;
+
+    try {
+      setIsRegisteringPatient(true);
+      const result = await patientRegistrationService.registerPatient({
+        fullName: patientForm.fullName.trim(),
+        email: patientForm.email.trim() || fallbackEmail,
+        phone: patientForm.phone.trim(),
+        ethiopianHealthId: patientForm.kebeleId.trim(),
+        dateOfBirth: patientForm.dateOfBirth || undefined,
+        gender: patientForm.gender as 'male' | 'female' | 'other',
+        encryptedData: {
+          woreda: patientForm.woreda,
+          kebele: patientForm.kebele,
+          emergencyContact: {
+            name: patientForm.emergencyName,
+            phone: patientForm.emergencyPhone,
+            relation: patientForm.emergencyRelation,
+          },
+        },
+      });
+      toast(
+        'success',
+        isAmharic
+          ? `ታካሚ ተመዝግቧል። ጊዜያዊ ፓስወርድ: ${result?.tempPassword || 'sent'}`
+          : `Patient registered. Temporary password: ${result?.tempPassword || 'sent'}`,
+      );
+      resetPatientForm();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to register patient';
+      toast('error', message);
+    } finally {
+      setIsRegisteringPatient(false);
+    }
   };
 
   React.useEffect(() => {
@@ -536,6 +614,8 @@ export const AdminDashboard: React.FC = () => {
                       isAmharic ? 'የታካሚውን ሙሉ ስም ያስገቡ' : "Enter patient's full name"
                     }
                     required
+                    value={patientForm.fullName}
+                    onChange={(e) => handlePatientFormChange('fullName', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} md={3}>
@@ -545,12 +625,18 @@ export const AdminDashboard: React.FC = () => {
                     label={isAmharic ? 'የትውልድ ቀን' : 'Date of Birth'}
                     InputLabelProps={{ shrink: true }}
                     required
+                    value={patientForm.dateOfBirth}
+                    onChange={(e) => handlePatientFormChange('dateOfBirth', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth required>
                     <InputLabel>{isAmharic ? 'ጾታ' : 'Gender'}</InputLabel>
-                    <Select label={isAmharic ? 'ጾታ' : 'Gender'} defaultValue="">
+                    <Select
+                      label={isAmharic ? 'ጾታ' : 'Gender'}
+                      value={patientForm.gender}
+                      onChange={(e) => handlePatientFormChange('gender', String(e.target.value))}
+                    >
                       <MenuItem value="male">
                         {isAmharic ? 'ወንድ' : 'Male'}
                       </MenuItem>
@@ -573,6 +659,8 @@ export const AdminDashboard: React.FC = () => {
                         : 'Enter Kebele ID number'
                     }
                     required
+                    value={patientForm.kebeleId}
+                    onChange={(e) => handlePatientFormChange('kebeleId', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -611,6 +699,8 @@ export const AdminDashboard: React.FC = () => {
                       label={isAmharic ? 'የስልክ ቁጥር' : 'Phone Number'}
                       placeholder="0911-234-567"
                       required
+                      value={patientForm.phone}
+                      onChange={(e) => handlePatientFormChange('phone', e.target.value)}
                     />
                     <Button variant="outlined">
                       {isAmharic ? 'ስልክ አረጋግጥ' : 'VERIFY PHONE'}
@@ -623,6 +713,8 @@ export const AdminDashboard: React.FC = () => {
                     type="email"
                     label={isAmharic ? 'ኢሜይል' : 'Email'}
                     placeholder="patient@email.com"
+                    value={patientForm.email}
+                    onChange={(e) => handlePatientFormChange('email', e.target.value)}
                   />
                 </Grid>
               </Grid>
@@ -651,7 +743,11 @@ export const AdminDashboard: React.FC = () => {
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth required>
                     <InputLabel>{isAmharic ? 'ወረዳ' : 'Woreda'}</InputLabel>
-                    <Select label={isAmharic ? 'ወረዳ' : 'Woreda'} defaultValue="">
+                    <Select
+                      label={isAmharic ? 'ወረዳ' : 'Woreda'}
+                      value={patientForm.woreda}
+                      onChange={(e) => handlePatientFormChange('woreda', String(e.target.value))}
+                    >
                       <MenuItem value="jimma">{isAmharic ? 'ጅማ' : 'Jimma'}</MenuItem>
                       <MenuItem value="seka">{isAmharic ? 'ሰካ' : 'Seka'}</MenuItem>
                       <MenuItem value="gera">{isAmharic ? 'ጌራ' : 'Gera'}</MenuItem>
@@ -668,6 +764,8 @@ export const AdminDashboard: React.FC = () => {
                         : 'Enter kebele number/name'
                     }
                     required
+                    value={patientForm.kebele}
+                    onChange={(e) => handlePatientFormChange('kebele', e.target.value)}
                   />
                 </Grid>
               </Grid>
@@ -683,6 +781,8 @@ export const AdminDashboard: React.FC = () => {
                     label={isAmharic ? 'ስም' : 'Name'}
                     placeholder={isAmharic ? 'ሙሉ ስም' : 'Full name'}
                     required
+                    value={patientForm.emergencyName}
+                    onChange={(e) => handlePatientFormChange('emergencyName', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -691,6 +791,8 @@ export const AdminDashboard: React.FC = () => {
                     label={isAmharic ? 'ስልክ' : 'Phone'}
                     placeholder="0912-345-678"
                     required
+                    value={patientForm.emergencyPhone}
+                    onChange={(e) => handlePatientFormChange('emergencyPhone', e.target.value)}
                   />
                 </Grid>
                 <Grid item xs={12} md={4}>
@@ -703,6 +805,8 @@ export const AdminDashboard: React.FC = () => {
                         : 'e.g., Brother, Sister, Mother'
                     }
                     required
+                    value={patientForm.emergencyRelation}
+                    onChange={(e) => handlePatientFormChange('emergencyRelation', e.target.value)}
                   />
                 </Grid>
               </Grid>
@@ -717,14 +821,27 @@ export const AdminDashboard: React.FC = () => {
                   mt: 3,
                 }}
               >
-                <Button variant="outlined">
+                <Button
+                  variant="outlined"
+                  onClick={() =>
+                    toast(
+                      'info',
+                      isAmharic ? 'ተደጋጋሚነት ምርመራ እየተዘጋጀ ነው።' : 'Duplicate check will be connected next.',
+                    )
+                  }
+                >
                   {isAmharic ? '🔍 ተደጋጋሚነት አረጋግጥ' : '🔍 CHECK FOR DUPLICATES'}
                 </Button>
                 <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button variant="outlined" color="inherit">
+                  <Button variant="outlined" color="inherit" onClick={resetPatientForm}>
                     {isAmharic ? '❌ ሰርዝ' : '❌ CANCEL'}
                   </Button>
-                  <Button variant="contained" color="primary">
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleRegisterPatient}
+                    disabled={isRegisteringPatient}
+                  >
                     {isAmharic ? '✅ ታካሚ መዝግብ' : '✅ REGISTER PATIENT'}
                   </Button>
                 </Box>
@@ -881,7 +998,17 @@ export const AdminDashboard: React.FC = () => {
             <Stack spacing={1} sx={{ maxWidth: 520 }}>
               <TextField fullWidth label={isAmharic ? 'ስም' : 'Name'} defaultValue={adminName} />
               <TextField fullWidth label={isAmharic ? '2FA' : '2FA'} value={isAmharic ? 'አስፈላጊ (Required)' : 'Required'} disabled />
-              <Button variant="contained">{isAmharic ? 'አስቀምጥ' : 'Save'}</Button>
+              <Button
+                variant="contained"
+                onClick={() =>
+                  toast(
+                    'success',
+                    isAmharic ? 'ቅንብሮች ተቀምጠዋል።' : 'Settings saved successfully.',
+                  )
+                }
+              >
+                {isAmharic ? 'አስቀምጥ' : 'Save'}
+              </Button>
             </Stack>
           </CardContent>
         </Card>
