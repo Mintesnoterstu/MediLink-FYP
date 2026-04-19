@@ -367,6 +367,7 @@ export const mockDiseases: Disease[] = [
     severity: 'critical',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['whole body', 'immune system'],
+    videoUrl: 'https://www.youtube.com/embed/CGKrMipFDPc',
   },
   // AUTOIMMUNE (2)
   {
@@ -425,6 +426,7 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['hands', 'feet', 'wrists', 'knees', 'joints'],
+    videoUrl: 'https://www.youtube.com/embed/FB_FbpkUsGA',
   },
   {
     id: 'dia1',
@@ -482,6 +484,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['pancreas', 'whole body'],
+    videoUrl: 'https://www.youtube.com/embed/aoQjjkTK3E4',
   },
   // SILENT DISEASES (remaining)
   {
@@ -684,7 +687,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['lungs', 'chest'],
-    videoUrl: undefined,
+    videoUrl: 'https://www.youtube.com/embed/_TgKuvMELjY',
   },
   {
     id: 'scd1',
@@ -704,7 +707,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['blood', 'whole body'],
-    videoUrl: undefined,
+    videoUrl: 'https://www.youtube.com/embed/8RjB3KC8EUU',
   },
   {
     id: 'tb1',
@@ -724,7 +727,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'high' },
     bodyRegions: ['lungs', 'chest'],
-    videoUrl: undefined,
+    videoUrl: 'https://www.youtube.com/embed/tr-PZ_fsg6c',
   },
   {
     id: 'typh1',
@@ -766,7 +769,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['skin', 'joints', 'kidneys'],
-    videoUrl: undefined,
+    videoUrl: 'https://www.youtube.com/embed/LI-jJZP2m3o',
   },
   {
     id: 'ms1',
