@@ -20,12 +20,7 @@ export const Home: React.FC = () => {
   const navigate = useNavigate();
 
   const dashboardServices = [
-    {
-      title: 'AI Symptom Checker',
-      description: 'Instant guidance with bilingual explanations.',
-      cta: 'Try now',
-      path: '/symptom-checker',
-    },
+    
     {
       title: 'Health Records',
       description: 'View a consolidated history of your visits and labs.',
