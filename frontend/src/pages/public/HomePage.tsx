@@ -116,7 +116,7 @@ export const HomePage: React.FC = () => {
     },
   ];
 
-  const heroTitleText = isAmharic ? 'ሜድሊንክ — ደህን፣ ባለሁለት ቋንቋ፣ በAI የሚሠራ የጤና አገልግሎት' : 'MediLink — Secure, bilingual, AI-powered healthcare';
+  const heroTitleText = isAmharic ? 'ሜድሊንክ — ደህንነቱ የተጠበቀየተጠበቀ፣ ባለሁለት ቋንቋ፣ በAI የታገዘ የጤና አገልግሎት' : 'MediLink — Secure, bilingual, AI-powered healthcare';
   const heroSubtitleText = isAmharic
     ? 'ለህዝብ መረጃ እና የግል ዳሽቦርድ የተዋሃደ መድረክ። ለታካሚዎች፣ ለአገልግሎት ሰጪዎች እና ለአስተዳዳሪዎች የተዘጋጀ።'
     : 'Access a unified platform for public resources and personal dashboards. Designed for patients, providers, and administrators.';
