@@ -23,15 +23,17 @@ import {
 import { Home, BarChart, Settings, Logout as LogoutIcon, LocalHospital, Groups } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { CreateFacilityAdminForm, CreateFacilityAdminPayload } from '@/components/admin/CreateFacilityAdminForm';
-import { RegisterFacilityForm, RegisterFacilityPayload } from '@/components/admin/RegisterFacilityForm';
 import { FacilityAdminsList } from '@/components/admin/FacilityAdminsList';
 import { FacilitiesList } from '@/components/admin/FacilitiesList';
 import { StatisticsCards } from '@/components/admin/StatisticsCards';
 import { cityAdminService } from '@/features/admin/services/cityAdminService';
 import { useNavigate } from 'react-router-dom';
+import { useUI } from '@/contexts/UIContext';
 
 export const CityDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const { language } = useUI();
+  const isAmharic = language === 'am';
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(false);
   const [stats, setStats] = React.useState({ totalFacilities: 0, totalProfessionals: 0, totalPatients: 0 });
@@ -85,13 +87,6 @@ export const CityDashboard: React.FC = () => {
     });
   };
 
-  const onRegisterFacility = async (payload: RegisterFacilityPayload) => {
-    await withLoading(async () => {
-      await cityAdminService.registerFacility(payload);
-      showToast('Facility registered successfully.', 'success');
-    });
-  };
-
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
@@ -101,17 +96,19 @@ export const CityDashboard: React.FC = () => {
           </IconButton>
           <Box>
             <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }, lineHeight: 1.2 }}>
-              CITY ADMIN DASHBOARD
+              {isAmharic ? 'የከተማ አስተዳዳሪ ዳሽቦርድ' : 'CITY ADMIN DASHBOARD'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <strong>{user?.name}</strong> · Role: City Admin (Jimma City)
+              <strong>{user?.name}</strong> · {isAmharic ? 'ሚና፡ የከተማ አስተዳዳሪ (ጅማ ከተማ)' : 'Role: City Admin (Jimma City)'}
             </Typography>
           </Box>
         </Box>
       </Box>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        City admins can only view anonymous statistics. No patient-level data is shown.
+        {isAmharic
+          ? 'የከተማ አስተዳዳሪዎች ስም-አልባ ስታቲስቲክስ ብቻ ያያሉ። የታካሚ ዝርዝር መረጃ አይታይም።'
+          : 'City admins can only view anonymous statistics. No patient-level data is shown.'}
       </Alert>
 
       {(active === 'dashboard' || active === 'statistics') && (
@@ -122,25 +119,19 @@ export const CityDashboard: React.FC = () => {
         <Stack spacing={3} sx={{ mt: 3 }}>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Create Facility Admin</Typography>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'የተቋም አስተዳዳሪ ፍጠር' : 'Create Facility Admin'}</Typography>
               <CreateFacilityAdminForm loading={loading} onSubmit={onCreateAdmin} />
             </CardContent>
           </Card>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Register Facility</Typography>
-              <RegisterFacilityForm loading={loading} onSubmit={onRegisterFacility} />
-            </CardContent>
-          </Card>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Facility Admins</Typography>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'የተቋም አስተዳዳሪዎች' : 'Facility Admins'}</Typography>
               <FacilityAdminsList rows={facilityAdmins} />
             </CardContent>
           </Card>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Facilities</Typography>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'ተቋማት' : 'Facilities'}</Typography>
               <FacilitiesList rows={facilities} />
             </CardContent>
           </Card>
@@ -150,7 +141,7 @@ export const CityDashboard: React.FC = () => {
       {(active === 'dashboard' || active === 'audit') && (
         <Card sx={{ mt: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
-            <Typography variant="subtitle1" fontWeight={900} gutterBottom>Audit Logs</Typography>
+            <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'የኦዲት መዝገቦች' : 'Audit Logs'}</Typography>
             {audit.slice(0, 10).map((item) => (
               <Typography key={`${item.ts}-${item.action}`} variant="body2" sx={{ mb: 1 }}>
                 {new Date(item.ts).toLocaleString()} - {item.action}
@@ -163,9 +154,9 @@ export const CityDashboard: React.FC = () => {
       {active === 'settings' && (
         <Card sx={{ mt: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
-            <Typography variant="subtitle1" fontWeight={900} gutterBottom>Settings</Typography>
+            <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'ቅንብሮች' : 'Settings'}</Typography>
             <Typography variant="body2" color="text.secondary">
-              Settings UI can be added here (frontend-only).
+              {isAmharic ? 'የቅንብር ገጽ እዚህ መጨመር ይቻላል።' : 'Settings UI can be added here (frontend-only).'}
             </Typography>
           </CardContent>
         </Card>
@@ -189,48 +180,48 @@ export const CityDashboard: React.FC = () => {
       >
         <Box sx={{ p: 2 }}>
           <Typography variant="subtitle1" fontWeight={800}>
-            {user?.name || 'City Admin'}
+            {user?.name || (isAmharic ? 'የከተማ አስተዳዳሪ' : 'City Admin')}
           </Typography>
           <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            Role: City Admin
+            {isAmharic ? 'ሚና፡ የከተማ አስተዳዳሪ' : 'Role: City Admin'}
           </Typography>
         </Box>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
         <List>
           <ListItemButton onClick={() => { setActive('dashboard'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
             <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Home /></ListItemIcon>
-            <ListItemText primary="Dashboard" />
+            <ListItemText primary={isAmharic ? 'ዳሽቦርድ' : 'Dashboard'} />
           </ListItemButton>
           <ListItemButton onClick={() => { setActive('facility'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
             <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><LocalHospital /></ListItemIcon>
-            <ListItemText primary="Facility Management" />
+            <ListItemText primary={isAmharic ? 'የተቋም አስተዳደር' : 'Facility Management'} />
           </ListItemButton>
           <ListItemButton onClick={() => { setActive('statistics'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
             <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><BarChart /></ListItemIcon>
-            <ListItemText primary="Statistics" />
+            <ListItemText primary={isAmharic ? 'ስታቲስቲክስ' : 'Statistics'} />
           </ListItemButton>
           <ListItemButton onClick={() => { setActive('audit'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
             <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Groups /></ListItemIcon>
-            <ListItemText primary="Audit Logs" />
+            <ListItemText primary={isAmharic ? 'የኦዲት መዝገብ' : 'Audit Logs'} />
           </ListItemButton>
           <ListItemButton onClick={() => { setActive('settings'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
             <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Settings /></ListItemIcon>
-            <ListItemText primary="Settings" />
+            <ListItemText primary={isAmharic ? 'ቅንብሮች' : 'Settings'} />
           </ListItemButton>
           <ListItemButton onClick={() => { setDrawerOpen(false); setConfirmLogout(true); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
             <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><LogoutIcon /></ListItemIcon>
-            <ListItemText primary="Logout" />
+            <ListItemText primary={isAmharic ? 'ውጣ' : 'Logout'} />
           </ListItemButton>
         </List>
       </Drawer>
 
       <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)}>
-        <DialogTitle>Confirm Logout</DialogTitle>
+        <DialogTitle>{isAmharic ? 'መውጣትን ያረጋግጡ' : 'Confirm Logout'}</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">Are you sure you want to log out?</Typography>
+          <Typography variant="body2">{isAmharic ? 'ከስርዓቱ መውጣት ይፈልጋሉ?' : 'Are you sure you want to log out?'}</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmLogout(false)}>Cancel</Button>
+          <Button onClick={() => setConfirmLogout(false)}>{isAmharic ? 'ሰርዝ' : 'Cancel'}</Button>
           <Button
             color="error"
             variant="contained"
@@ -240,7 +231,7 @@ export const CityDashboard: React.FC = () => {
               navigate('/');
             }}
           >
-            Logout
+            {isAmharic ? 'ውጣ' : 'Logout'}
           </Button>
         </DialogActions>
       </Dialog>

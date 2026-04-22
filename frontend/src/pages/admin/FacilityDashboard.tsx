@@ -22,6 +22,7 @@ import {
 } from '@mui/material';
 import { Home, BarChart, Settings, Logout as LogoutIcon, LocalHospital, Groups } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useUI } from '@/contexts/UIContext';
 import { CreateDoctorForm, CreateDoctorPayload } from '@/components/admin/CreateDoctorForm';
 import { CreateNurseForm, CreateNursePayload } from '@/components/admin/CreateNurseForm';
 import { RegisterPatientForm, RegisterPatientPayload } from '@/components/admin/RegisterPatientForm';
@@ -33,6 +34,8 @@ import { useNavigate } from 'react-router-dom';
 
 export const FacilityDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const { language } = useUI();
+  const isAmharic = language === 'am';
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(false);
   const [stats, setStats] = React.useState({ totalDoctors: 0, totalNurses: 0, totalPatients: 0, todaysVisits: 0 });
@@ -151,17 +154,19 @@ export const FacilityDashboard: React.FC = () => {
           </IconButton>
           <Box>
             <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }, lineHeight: 1.2 }}>
-              FACILITY ADMIN DASHBOARD
+              {isAmharic ? 'የተቋም አስተዳዳሪ ዳሽቦርድ' : 'FACILITY ADMIN DASHBOARD'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              <strong>{user?.name}</strong> · Role: Facility Admin
+              <strong>{user?.name}</strong> · {isAmharic ? 'ሚና፡ የተቋም አስተዳዳሪ' : 'Role: Facility Admin'}
             </Typography>
           </Box>
         </Box>
       </Box>
 
       <Alert severity="info" sx={{ mb: 2 }}>
-        Facility admins can register patients but cannot view patient medical records; only anonymous counts and basic profile info are visible.
+        {isAmharic
+          ? 'የተቋም አስተዳዳሪዎች ታካሚ መመዝገብ ይችላሉ፣ ነገር ግን የታካሚ ሕክምና መዝገብ አያዩም።'
+          : 'Facility admins can register patients but cannot view patient medical records; only anonymous counts and basic profile info are visible.'}
       </Alert>
 
       {(active === 'dashboard' || active === 'statistics') && (

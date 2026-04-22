@@ -28,7 +28,6 @@ import { useUI } from '@/contexts/UIContext';
 import { VerifiedRemedy } from '@/types';
 import { mockSelfCareRemedies } from '@/data/medicinesData';
 import { catalogService } from '@/services/catalogService';
-import { mockSelfCareRemedies } from '@/data/medicinesData';
 
 const bodyParts = [
   { id: 'skin', label: 'Skin', labelAm: 'ቆዳ', icon: <Healing /> },
@@ -77,6 +76,37 @@ const professionalCare = [
 export const MedicinePage: React.FC = () => {
   const { language } = useUI();
   const isAmharic = language === 'am';
+  const medImg = (filename: string) => `/medicine%20images/${encodeURIComponent(filename)}`;
+  const normalizeName = (value: string) =>
+    String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+
+  // Canonical 20-medicine list (only these should appear)
+  const canonicalMedicines = [
+    { key: 'paracetamol', name: 'Paracetamol', nameAmharic: 'ፓራሲታሞል', category: 'modern' as const, imageUrl: medImg('Paracetamol.png') },
+    { key: 'ibuprofen', name: 'Ibuprofen', nameAmharic: 'ኢቡፕሮፌን', category: 'modern' as const, imageUrl: medImg('Ibuprofen.png') },
+    { key: 'aspirinlowdose', name: 'Aspirin (Low Dose)', nameAmharic: 'አስፒሪን', category: 'modern' as const, imageUrl: medImg('Aspirin (Low Dose).png') },
+    { key: 'cetirizine', name: 'Cetirizine', nameAmharic: 'ሴቲሪዚን', category: 'modern' as const, imageUrl: medImg('Cetirizine.png') },
+    { key: 'loratadine', name: 'Loratadine', nameAmharic: 'ሎራታዲን', category: 'modern' as const, imageUrl: medImg('Loratadine.png') },
+    { key: 'oralrehydrationsaltsors', name: 'Oral Rehydration Salts (ORS)', nameAmharic: 'ኦአርኤስ', category: 'modern' as const, imageUrl: medImg('Oral Rehydration Salts (ORS).png') },
+    { key: 'multivitamins', name: 'Multivitamins', nameAmharic: 'ማልቲቫይታሚን', category: 'modern' as const, imageUrl: medImg('multivitamin capsules.png') },
+    { key: 'antacid', name: 'Antacid', nameAmharic: 'አንታሲድ', category: 'modern' as const, imageUrl: medImg('antacid.png') },
+
+    { key: 'amoxicillin', name: 'Amoxicillin', nameAmharic: 'አሞክሲሲሊን', category: 'prescription' as const, imageUrl: medImg('Amoxicillin.png') },
+    { key: 'azithromycin', name: 'Azithromycin', nameAmharic: 'አዚትሮማይሲን', category: 'prescription' as const, imageUrl: medImg('Azithromycin.png') },
+    { key: 'metformin', name: 'Metformin', nameAmharic: 'ሜትፎርሚን', category: 'prescription' as const, imageUrl: medImg('Metformin.png') },
+    { key: 'amlodipine', name: 'Amlodipine', nameAmharic: 'አምሎዲፒን', category: 'prescription' as const, imageUrl: medImg('Amlodipine.png') },
+    { key: 'omeprazole', name: 'Omeprazole', nameAmharic: 'ኦሜፕራዞል', category: 'prescription' as const, imageUrl: medImg('Omeprazole.png') },
+    { key: 'salbutamolinhaler', name: 'Salbutamol Inhaler', nameAmharic: 'ሳልቡታሞል ኢንሄለር', category: 'prescription' as const, imageUrl: medImg('Salbutamol inhaler.png') },
+
+    { key: 'honey', name: 'Honey', nameAmharic: 'ማር', category: 'traditional' as const, imageUrl: medImg('honey.png') },
+    { key: 'ginger', name: 'Ginger', nameAmharic: 'ዝንጅብል', category: 'traditional' as const, imageUrl: medImg('ginger.png') },
+    { key: 'garlic', name: 'Garlic', nameAmharic: 'ነጭ ሽንኩርት', category: 'traditional' as const, imageUrl: medImg('fresh garlic.png') },
+    { key: 'moringashiferaw', name: 'Moringa (Shiferaw)', nameAmharic: 'ሞሪንጋ (ሽፈራው)', category: 'traditional' as const, imageUrl: medImg('moringa.png') },
+    { key: 'blackseednigella', name: 'Black Seed (Nigella)', nameAmharic: 'ጥቁር አዝሙድ', category: 'traditional' as const, imageUrl: medImg('black seed.png') },
+    { key: 'turmeric', name: 'Turmeric', nameAmharic: 'እርድ', category: 'traditional' as const, imageUrl: medImg('turmeric.png') },
+  ];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'self-care' | 'professional' | 'types'>('self-care');
@@ -99,42 +129,54 @@ export const MedicinePage: React.FC = () => {
       try {
         setLoadingRemedies(true);
         setRemediesError(null);
-        // Always start from the curated local list (20 medicines) so DB extras never appear.
-        // Merge in missing text from API matches by name, but never add new medicines.
-        const apiRows = await catalogService.getMedicines().catch(() => []);
-        const apiByName = new Map(
-          (Array.isArray(apiRows) ? apiRows : []).map((r) => [String(r.name || '').trim().toLowerCase(), r] as const),
-        );
+        const rows = await catalogService.getMedicines();
+        const source = Array.isArray(rows) && rows.length > 0 ? rows : mockSelfCareRemedies;
+        const sourceByNormalized = new Map(source.map((r) => [normalizeName(r.name), r] as const));
 
-        const merged = mockSelfCareRemedies.map((local) => {
-          const api = apiByName.get(local.name.trim().toLowerCase());
+        // Only keep the canonical 20 list and enrich details from API/local source.
+        const finalList = canonicalMedicines.map((canon, index) => {
+          const matched =
+            sourceByNormalized.get(canon.key) ||
+            sourceByNormalized.get(normalizeName(canon.name)) ||
+            sourceByNormalized.get(
+              canon.key === 'garlic'
+                ? 'freshgarlic'
+                : canon.key === 'moringashiferaw'
+                  ? 'moringa'
+                  : canon.key === 'blackseednigella'
+                    ? 'blackseed'
+                    : canon.key,
+            );
+
+          const fallback = mockSelfCareRemedies.find((r) => normalizeName(r.name) === canon.key) || mockSelfCareRemedies[0];
+          const base = matched || fallback;
+
           return {
-            ...local,
-            // Keep curated imageUrl/categories; only fill missing text fields from API if local is empty.
-            description: local.description || api?.description || local.description,
-            descriptionAmharic: local.descriptionAmharic || api?.descriptionAmharic || local.descriptionAmharic,
-            preparation: local.preparation || api?.preparation || local.preparation,
-            preparationAmharic: local.preparationAmharic || api?.preparationAmharic || local.preparationAmharic,
-            dosage: local.dosage || api?.dosage || local.dosage,
-            dosageAmharic: local.dosageAmharic || api?.dosageAmharic || local.dosageAmharic,
-            indications: (local.indications?.length ? local.indications : api?.indications) || local.indications,
-            indicationsAmharic: (local.indicationsAmharic?.length ? local.indicationsAmharic : api?.indicationsAmharic) || local.indicationsAmharic,
-            safetyWarnings: (local.safetyWarnings?.length ? local.safetyWarnings : api?.safetyWarnings) || local.safetyWarnings,
-            safetyWarningsAmharic:
-              (local.safetyWarningsAmharic?.length ? local.safetyWarningsAmharic : api?.safetyWarningsAmharic) ||
-              local.safetyWarningsAmharic,
+            ...base,
+            id: base?.id || `med-${index + 1}`,
+            name: canon.name,
+            nameAmharic: canon.nameAmharic,
+            category: canon.category,
+            imageUrl: canon.imageUrl,
           };
         });
 
-        if (active) setRemedies(merged);
+        if (active) setRemedies(finalList);
       } catch (error: any) {
         if (active) {
-          setRemedies(mockSelfCareRemedies);
-<<<<<<< HEAD
+          const fallbackOnly = canonicalMedicines.map((canon, index) => {
+            const fromLocal = mockSelfCareRemedies.find((r) => normalizeName(r.name) === canon.key) || mockSelfCareRemedies[0];
+            return {
+              ...fromLocal,
+              id: fromLocal?.id || `med-fallback-${index + 1}`,
+              name: canon.name,
+              nameAmharic: canon.nameAmharic,
+              category: canon.category,
+              imageUrl: canon.imageUrl,
+            };
+          });
+          setRemedies(fallbackOnly);
           setRemediesError(error?.message || null);
-=======
-          setRemediesError('Using local medicine data from frontend/src/data/medicinesData.ts');
->>>>>>> a30baaeec3b45154895a88445f1a245231b6a64e
         }
       } finally {
         if (active) setLoadingRemedies(false);

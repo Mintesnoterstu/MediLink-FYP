@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { useUI } from '@/contexts/UIContext';
 import { CreateWoredaForm } from '@/components/admin/CreateWoredaForm';
 import { CreateCityForm } from '@/components/admin/CreateCityForm';
 import { AdminsList } from '@/components/admin/AdminsList';
@@ -45,6 +46,8 @@ const defaultStats: ZoneStats = {
 
 export const ZonalDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { language } = useUI();
+  const isAmharic = language === 'am';
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
@@ -133,10 +136,10 @@ export const ZonalDashboard: React.FC = () => {
         </IconButton>
         <Box>
               <Typography variant="h5" fontWeight={800}>
-            Zonal Admin Dashboard
+            {isAmharic ? 'የዞን አስተዳዳሪ ዳሽቦርድ' : 'Zonal Admin Dashboard'}
           </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            {user?.name} ({user?.adminLevel || 'zonal'})
+            {user?.name} ({user?.adminLevel || (isAmharic ? 'ዞን' : 'zonal')})
           </Typography>
         </Box>
       </Box>
@@ -145,7 +148,9 @@ export const ZonalDashboard: React.FC = () => {
 
       <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
         <List sx={{ width: 260 }}>
-          {['Dashboard', 'Create Admins', 'Lists', 'Recent Activity'].map((item, idx) => (
+          {(isAmharic
+            ? ['ዳሽቦርድ', 'አስተዳዳሪ ፍጠር', 'ዝርዝሮች', 'የቅርብ እንቅስቃሴ']
+            : ['Dashboard', 'Create Admins', 'Lists', 'Recent Activity']).map((item, idx) => (
             <ListItemButton
               key={item}
               onClick={() => {
@@ -163,7 +168,7 @@ export const ZonalDashboard: React.FC = () => {
         <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Total Woredas</Typography>
+              <Typography variant="caption" color="text.secondary">{isAmharic ? 'ጠቅላላ ወረዳዎች' : 'Total Woredas'}</Typography>
               <Typography variant="h5" fontWeight={800}>{stats.totalWoredas || 10}</Typography>
             </CardContent>
           </Card>
@@ -171,7 +176,7 @@ export const ZonalDashboard: React.FC = () => {
         <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Total Facilities</Typography>
+              <Typography variant="caption" color="text.secondary">{isAmharic ? 'ጠቅላላ ተቋማት' : 'Total Facilities'}</Typography>
               <Typography variant="h5" fontWeight={800}>{stats.totalFacilities || 86}</Typography>
             </CardContent>
           </Card>
@@ -179,7 +184,7 @@ export const ZonalDashboard: React.FC = () => {
         <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Total Professionals</Typography>
+              <Typography variant="caption" color="text.secondary">{isAmharic ? 'ጠቅላላ ባለሙያዎች' : 'Total Professionals'}</Typography>
               <Typography variant="h5" fontWeight={800}>{stats.totalProfessionals || 456}</Typography>
             </CardContent>
           </Card>
@@ -187,7 +192,7 @@ export const ZonalDashboard: React.FC = () => {
         <Grid item xs={12} md={3}>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
-              <Typography variant="caption" color="text.secondary">Total Patients</Typography>
+              <Typography variant="caption" color="text.secondary">{isAmharic ? 'ጠቅላላ ታካሚዎች' : 'Total Patients'}</Typography>
               <Typography variant="h5" fontWeight={800}>{(stats.totalPatients || 234567).toLocaleString()}+</Typography>
             </CardContent>
           </Card>
@@ -195,10 +200,10 @@ export const ZonalDashboard: React.FC = () => {
       </Grid>
 
       <Tabs value={activeTab} onChange={(_e, val) => setActiveTab(val)} sx={{ mb: 2 }}>
-        <Tab label="Dashboard" />
-        <Tab label="Create Admins" />
-        <Tab label="Lists" />
-        <Tab label="Recent Activity" />
+        <Tab label={isAmharic ? 'ዳሽቦርድ' : 'Dashboard'} />
+        <Tab label={isAmharic ? 'አስተዳዳሪ ፍጠር' : 'Create Admins'} />
+        <Tab label={isAmharic ? 'ዝርዝሮች' : 'Lists'} />
+        <Tab label={isAmharic ? 'የቅርብ እንቅስቃሴ' : 'Recent Activity'} />
       </Tabs>
 
       {emailStatus && (
