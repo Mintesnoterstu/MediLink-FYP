@@ -32,7 +32,7 @@ router.get('/patients/search', authRequired, requireRole('doctor', 'nurse'), asy
             WHERE c.patient_id = p.id
               AND c.doctor_id = $2
               AND c.status = 'active'
-              AND c.expires_at > now()
+              AND (c.expires_at IS NULL OR c.expires_at > now())
           ) AS has_active_consent
         FROM patients p
         JOIN users u ON u.id = p.user_id
@@ -173,10 +173,10 @@ router.get('/patients', authRequired, requireRole('doctor', 'nurse'), async (req
           c.scope,
           c.expires_at,
           (
-            SELECT max(al.created_at)
+            SELECT max(al.ts)
             FROM audit_logs al
             WHERE al.actor_id = $1
-              AND al.action_type = 'VIEW_PATIENT'
+              AND al.action = 'VIEW_PATIENT'
               AND al.details->>'patient_id' = p.id::text
           ) AS last_access
         FROM consents c
@@ -207,7 +207,7 @@ router.get('/patient/:id/dashboard', authRequired, requireRole('doctor', 'nurse'
         WHERE patient_id = $1
           AND doctor_id = $2
           AND status = 'active'
-          AND expires_at > now()
+          AND (expires_at IS NULL OR expires_at > now())
         LIMIT 1
       `,
         [req.params.id, req.user.id],
@@ -356,7 +356,7 @@ router.get('/patient/:id', authRequired, requireRole('doctor', 'nurse'), async (
       const consent = await client.query(
         `
         SELECT scope FROM consents
-        WHERE patient_id = $1 AND doctor_id = $2 AND status = 'active' AND expires_at > now()
+        WHERE patient_id = $1 AND doctor_id = $2 AND status = 'active' AND (expires_at IS NULL OR expires_at > now())
         LIMIT 1
       `,
         [req.params.id, req.user.id],
@@ -430,7 +430,7 @@ async function createRecordAndAutoRevoke({ req, patientId, recordType, recordDat
   const blob = encryptJson(encryptedData);
   const created = await withRequestSession(req, async (client) => {
     const consent = await client.query(
-      'SELECT id FROM consents WHERE patient_id=$1 AND doctor_id=$2 AND status=$3 AND expires_at>now() LIMIT 1',
+      'SELECT id FROM consents WHERE patient_id=$1 AND doctor_id=$2 AND status=$3 AND (expires_at IS NULL OR expires_at>now()) LIMIT 1',
       [patientId, req.user.id, 'active'],
     );
     if (!consent.rows[0]) {
@@ -442,7 +442,7 @@ async function createRecordAndAutoRevoke({ req, patientId, recordType, recordDat
     const r = await client.query(
       `
         INSERT INTO health_records (patient_id, record_type, encrypted_data, created_by, record_date, facility_id, status)
-        VALUES ($1, $2, $3, $4, $5, (SELECT facility_id FROM users WHERE id = $4), 'pending')
+        VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), (SELECT facility_id FROM users WHERE id = $4), 'pending')
         RETURNING id, patient_id, record_type, record_date, created_at, status
       `,
       [patientId, recordType, blob, req.user.id, recordDate || null],

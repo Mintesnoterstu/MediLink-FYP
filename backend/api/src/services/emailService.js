@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { logger } from '../utils/logger.js';
+import { withMedilinkSession } from '../config/database.js';
 
 function readMailConfig() {
   const host = process.env.SMTP_HOST;
@@ -82,22 +83,106 @@ async function assertEmailReady() {
   }
 }
 
-export async function sendPasswordResetEmail(toEmail, resetUrl) {
-  await assertEmailReady();
-  const from = mailer.from;
-  const subject = 'MediLink Password Reset';
-  const text = `Reset your password using this link: ${resetUrl}\nThis link expires in 30 minutes.`;
+async function createEmailLog({
+  toEmail,
+  recipientName,
+  recipientRole,
+  emailType,
+  subject,
+  content,
+}) {
+  if (!toEmail) return null;
+  try {
+    const inserted = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+      const r = await client.query(
+        `
+        INSERT INTO email_logs (
+          recipient_email, recipient_name, recipient_role, email_type,
+          subject, content, status, sent_at, error_message
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,'pending',NULL,NULL)
+        RETURNING id
+      `,
+        [toEmail, recipientName || null, recipientRole || null, emailType, subject, content],
+      );
+      return r.rows[0];
+    });
+    return inserted?.id || null;
+  } catch (e) {
+    logger.warn('Failed to create email_logs record', { to: toEmail, emailType, error: String(e?.message || e) });
+    return null;
+  }
+}
 
-  const info = await transporter.sendMail({
-    from,
-    to: toEmail,
+async function updateEmailLog(id, patch) {
+  if (!id) return;
+  const { status, sentAt, errorMessage } = patch || {};
+  try {
+    await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+      await client.query(
+        `
+        UPDATE email_logs
+        SET status = COALESCE($2, status),
+            sent_at = COALESCE($3, sent_at),
+            error_message = $4
+        WHERE id = $1
+      `,
+        [id, status || null, sentAt || null, errorMessage ?? null],
+      );
+    });
+  } catch (e) {
+    logger.warn('Failed to update email_logs record', { id, error: String(e?.message || e) });
+  }
+}
+
+async function sendAndLogEmail({
+  toEmail,
+  recipientName,
+  recipientRole,
+  emailType,
+  subject,
+  text,
+}) {
+  const from = mailer.from;
+  const logId = await createEmailLog({
+    toEmail,
+    recipientName,
+    recipientRole,
+    emailType,
     subject,
-    text,
+    content: text,
   });
 
-  logger.info('Password reset email queued', {
-    to: toEmail,
-    transport: transportMode,
+  try {
+    // Do not block core workflows if SMTP isn't configured.
+    // We still persist the email content and mark it failed.
+    if (!transporter) {
+      await updateEmailLog(logId, {
+        status: 'failed',
+        sentAt: null,
+        errorMessage: 'SMTP is not configured (missing SMTP_HOST/SMTP_USER/SMTP_PASS)',
+      });
+      return { transport: transportMode, messageId: null, emailLogId: logId };
+    }
+    const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+    await updateEmailLog(logId, { status: 'sent', sentAt: new Date(), errorMessage: null });
+    return { transport: transportMode, messageId: info?.messageId || null, emailLogId: logId };
+  } catch (e) {
+    await updateEmailLog(logId, { status: 'failed', sentAt: null, errorMessage: String(e?.message || e) });
+    throw e;
+  }
+}
+
+export async function sendPasswordResetEmail(toEmail, resetUrl) {
+  const subject = 'MediLink Password Reset';
+  const text = `Reset your password using this link: ${resetUrl}\nThis link expires in 30 minutes.`;
+  await sendAndLogEmail({
+    toEmail,
+    recipientName: null,
+    recipientRole: null,
+    emailType: 'password_reset',
+    subject,
+    text,
   });
 }
 
@@ -119,7 +204,7 @@ You have been appointed as ${roleLabel} for ${areaName}.
 
 Login Credentials:
 Email: ${toEmail}
-Temporary Password: ${temporaryPassword}
+Password: ${temporaryPassword}
 
 Login URL: ${frontendUrl}/login
 
@@ -129,14 +214,14 @@ For password recovery, use: ${recoveryEmail}
 
 Thank you,
 MediLink Team - Jimma Zone`;
-
-  const info = await transporter.sendMail({
-    from,
-    to: toEmail,
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: adminName,
+    recipientRole: 'admin',
+    emailType: 'account_creation',
     subject,
     text,
   });
-
   logger.info('Admin account email queued', {
     to: toEmail,
     roleLabel,
@@ -168,7 +253,7 @@ You have been appointed as Facility Admin for ${facilityName}.
 
 Login Credentials:
 Email: ${toEmail}
-Temporary Password: ${temporaryPassword}
+Password: ${temporaryPassword}
 
 Login URL: ${frontendUrl}/login
 
@@ -178,10 +263,11 @@ For password recovery, use: ${recoveryEmail}
 
 Thank you,
 MediLink Team - ${areaName}`;
-
-  const info = await transporter.sendMail({
-    from,
-    to: toEmail,
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: adminName,
+    recipientRole: 'facility_admin',
+    emailType: 'account_creation',
     subject,
     text,
   });
@@ -205,8 +291,6 @@ export async function sendDoctorAccountCreatedEmail({
   facilityName,
   temporaryPassword,
 }) {
-  await assertEmailReady();
-  const from = mailer.from;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const subject = 'Your MediLink Doctor Account Has Been Created';
   const text = `Dear Dr. ${doctorName},
@@ -215,7 +299,7 @@ You have been appointed as a Doctor at ${facilityName}.
 
 Login Credentials:
 Email: ${toEmail}
-Temporary Password: ${temporaryPassword}
+Password: ${temporaryPassword}
 
 Login URL: ${frontendUrl}/login
 
@@ -225,8 +309,14 @@ For password recovery, use your recovery email.
 
 Thank you,
 MediLink Team - ${facilityName}`;
-
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: doctorName,
+    recipientRole: 'doctor',
+    emailType: 'account_creation',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 
@@ -236,8 +326,6 @@ export async function sendNurseAccountCreatedEmail({
   facilityName,
   temporaryPassword,
 }) {
-  await assertEmailReady();
-  const from = mailer.from;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const subject = 'Your MediLink Nurse Account Has Been Created';
   const text = `Dear Nurse ${nurseName},
@@ -246,7 +334,7 @@ You have been appointed as a Nurse at ${facilityName}.
 
 Login Credentials:
 Email: ${toEmail}
-Temporary Password: ${temporaryPassword}
+Password: ${temporaryPassword}
 
 Login URL: ${frontendUrl}/login
 
@@ -257,7 +345,14 @@ For password recovery, use your recovery email.
 Thank you,
 MediLink Team - ${facilityName}`;
 
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: nurseName,
+    recipientRole: 'nurse',
+    emailType: 'account_creation',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 
@@ -269,8 +364,6 @@ export async function sendPatientRegistrationEmail({
   temporaryPassword,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
-  await assertEmailReady();
-  const from = mailer.from;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const subject = 'Your MediLink Patient Account Has Been Created';
   const text = `Dear ${patientName},
@@ -278,7 +371,7 @@ export async function sendPatientRegistrationEmail({
 Your MediLink account has been created at ${facilityName}.
 
 Your Ethiopian Health ID: ${ethiopianHealthId}
-Temporary Password: ${temporaryPassword}
+Password: ${temporaryPassword}
 
 Login URL: ${frontendUrl}/login
 
@@ -291,7 +384,14 @@ IMPORTANT:
 Thank you,
 MediLink Team`;
 
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: patientName,
+    recipientRole: 'patient',
+    emailType: 'account_creation',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 
@@ -303,8 +403,6 @@ export async function sendConsentRequestEmailToPatient({
   reason,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
-  await assertEmailReady();
-  const from = mailer.from;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const subject = `${doctorName} Requested Access to Your Medical Records`;
   const text = `Dear ${patientName},
@@ -319,7 +417,14 @@ Login URL: ${frontendUrl}/login
 
 Thank you,
 MediLink Team`;
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: patientName,
+    recipientRole: 'patient',
+    emailType: 'consent_request',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 
@@ -332,8 +437,6 @@ export async function sendConsentGrantedEmailToProfessional({
   dashboardLink,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
-  await assertEmailReady();
-  const from = mailer.from;
   const subject = `${patientName} Granted You Access to Their Medical Records`;
   const text = `Dear Dr. ${doctorName},
 
@@ -347,7 +450,14 @@ ${dashboardLink ? `Direct Link: ${dashboardLink}` : ''}
 
 Thank you,
 MediLink Team`;
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: doctorName,
+    recipientRole: 'doctor',
+    emailType: 'consent_granted',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 
@@ -357,8 +467,6 @@ export async function sendAutoRevokeEmailToPatient({
   doctorName,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
-  await assertEmailReady();
-  const from = mailer.from;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const subject = `${doctorName} Updated Your Medical Record`;
   const text = `Dear ${patientName},
@@ -373,7 +481,14 @@ Login URL: ${frontendUrl}/login
 
 Thank you,
 MediLink Team`;
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: patientName,
+    recipientRole: 'patient',
+    emailType: 'record_updated',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 
@@ -384,8 +499,6 @@ export async function sendChangeApprovedEmailToProfessional({
   dashboardLink,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
-  await assertEmailReady();
-  const from = mailer.from;
   const subject = `${patientName} Approved Your Changes`;
   const text = `Dear Dr. ${doctorName},
 
@@ -396,7 +509,14 @@ ${dashboardLink ? `\nDirect Link: ${dashboardLink}` : ''}
 
 Thank you,
 MediLink Team`;
-  const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+  const info = await sendAndLogEmail({
+    toEmail,
+    recipientName: doctorName,
+    recipientRole: 'doctor',
+    emailType: 'change_approved',
+    subject,
+    text,
+  });
   return { transport: transportMode, messageId: info?.messageId || null };
 }
 

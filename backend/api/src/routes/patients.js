@@ -318,12 +318,12 @@ router.get('/audit', authRequired, requireRole('patient'), async (req, res, next
   try {
     const r = await query(
       `
-      SELECT action_type, actor_id, details, created_at
+      SELECT action AS action_type, actor_id, details, ts AS created_at
       FROM audit_logs
       WHERE details->>'patient_id' IN (
         SELECT id::text FROM patients WHERE user_id = $1
       )
-      ORDER BY created_at DESC
+      ORDER BY ts DESC
       LIMIT 100
     `,
       [req.user.id],

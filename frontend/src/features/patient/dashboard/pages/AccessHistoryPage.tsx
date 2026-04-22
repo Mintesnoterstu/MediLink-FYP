@@ -10,24 +10,29 @@ export const AccessHistoryPage: React.FC = () => {
   const [rows, setRows] = React.useState<any[]>([]);
   const [error, setError] = React.useState<string>('');
 
-  React.useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await consentService.getAccessAudit();
-        if (mounted) setRows(Array.isArray(data) ? data : []);
-      } catch (e: any) {
-        if (mounted) setError(e?.response?.data?.error || 'Failed to load access history');
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+  const load = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await consentService.getAccessAudit();
+      setRows(Array.isArray(data) ? data : []);
+    } catch (e: any) {
+      setError(e?.response?.data?.error || 'Failed to load access history');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  React.useEffect(() => {
+    load();
+    const onRefresh = () => load();
+    window.addEventListener('focus', onRefresh);
+    window.addEventListener('patient-dashboard-updated', onRefresh as EventListener);
+    return () => {
+      window.removeEventListener('focus', onRefresh);
+      window.removeEventListener('patient-dashboard-updated', onRefresh as EventListener);
+    };
+  }, [load]);
 
   return (
     <Box>
@@ -62,9 +67,9 @@ export const AccessHistoryPage: React.FC = () => {
                 </TableRow>
               ) : rows.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell>{r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</TableCell>
+                  <TableCell>{(r.created_at || r.ts) ? new Date(r.created_at || r.ts).toLocaleString() : '-'}</TableCell>
                   <TableCell>{r.actor_name || r.actor_id || '-'}</TableCell>
-                  <TableCell>{r.action || '-'}</TableCell>
+                  <TableCell>{r.action || r.action_type || '-'}</TableCell>
                   <TableCell>{r.details ? JSON.stringify(r.details) : '-'}</TableCell>
                   <TableCell>{r.status || 'logged'}</TableCell>
                 </TableRow>

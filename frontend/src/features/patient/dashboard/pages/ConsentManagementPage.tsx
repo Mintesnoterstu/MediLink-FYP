@@ -55,6 +55,13 @@ export const ConsentManagementPage: React.FC = () => {
 
   React.useEffect(() => {
     load();
+    const onRefresh = () => load();
+    window.addEventListener('focus', onRefresh);
+    window.addEventListener('patient-dashboard-updated', onRefresh as EventListener);
+    return () => {
+      window.removeEventListener('focus', onRefresh);
+      window.removeEventListener('patient-dashboard-updated', onRefresh as EventListener);
+    };
   }, [load]);
 
   const grantRequest = async (requestId: string) => {
@@ -72,6 +79,7 @@ export const ConsentManagementPage: React.FC = () => {
       });
       notify('success', 'Consent granted successfully.');
       await load();
+      window.dispatchEvent(new Event('patient-dashboard-updated'));
     } catch (e: any) {
       notify('error', e?.response?.data?.error || e?.message || 'Failed to grant consent');
     }
@@ -82,6 +90,7 @@ export const ConsentManagementPage: React.FC = () => {
       await consentService.denyConsentRequest(requestId);
       notify('info', 'Consent request denied.');
       await load();
+      window.dispatchEvent(new Event('patient-dashboard-updated'));
     } catch (e: any) {
       notify('error', e?.response?.data?.error || e?.message || 'Failed to deny request');
     }
@@ -92,6 +101,7 @@ export const ConsentManagementPage: React.FC = () => {
       await consentService.revokeConsent({ consentId });
       notify('info', 'Consent revoked.');
       await load();
+      window.dispatchEvent(new Event('patient-dashboard-updated'));
     } catch (e: any) {
       notify('error', e?.response?.data?.error || e?.message || 'Failed to revoke consent');
     }

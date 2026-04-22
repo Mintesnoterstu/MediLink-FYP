@@ -58,22 +58,38 @@ export const FacilityDashboard: React.FC = () => {
   const notify = (message: string, severity: 'success' | 'error' | 'warning') => setToast({ open: true, message, severity });
 
   const load = React.useCallback(async () => {
-    const [s, d, n, p, a] = await Promise.all([
+    // Be resilient: if one endpoint fails (often audit), still show patients list.
+    const results = await Promise.allSettled([
       facilityAdminService.getStatistics(),
       facilityAdminService.getDoctors(),
       facilityAdminService.getNurses(),
       facilityAdminService.getPatients(),
       facilityAdminService.getAudit(),
     ]);
-    setStats(s);
-    setDoctors(d);
-    setNurses(n);
-    setPatients(p);
-    setAudit(a);
+
+    const [s, d, n, p, a] = results;
+
+    if (s.status === 'fulfilled') setStats(s.value);
+    if (d.status === 'fulfilled') setDoctors(d.value);
+    if (n.status === 'fulfilled') setNurses(n.value);
+    if (p.status === 'fulfilled') setPatients(p.value);
+    if (a.status === 'fulfilled') setAudit(a.value);
+
+    const firstErr = results.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+    if (firstErr) {
+      const e: any = firstErr.reason;
+      const apiError = e?.response?.data;
+      const details = Array.isArray(apiError?.details) ? apiError.details.join(' ') : '';
+      notify(details || apiError?.error || e?.message || 'Some dashboard data failed to load', 'warning');
+    }
   }, []);
 
   React.useEffect(() => {
-    load().catch(() => notify('Failed to load facility dashboard', 'error'));
+    load().catch((e: any) => {
+      const apiError = e?.response?.data;
+      const details = Array.isArray(apiError?.details) ? apiError.details.join(' ') : '';
+      notify(details || apiError?.error || e?.message || 'Failed to load facility dashboard', 'error');
+    });
   }, [load]);
 
   const withLoading = async (work: () => Promise<void>) => {

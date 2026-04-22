@@ -26,6 +26,7 @@ const filesInOrder = [
   '013_facility_admin_support.up.sql',
   '014_consent_flow_support.up.sql',
   '015_allow_nurse_rls.up.sql',
+  '016_email_logs.up.sql',
 ];
 
 const databaseUrl = process.env.DATABASE_URL;
