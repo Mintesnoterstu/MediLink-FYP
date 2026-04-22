@@ -26,6 +26,7 @@ import {
 import { Search, VerifiedUser, LocalHospital, Healing, Info, Clear } from '@mui/icons-material';
 import { useUI } from '@/contexts/UIContext';
 import { VerifiedRemedy } from '@/types';
+import { mockSelfCareRemedies } from '@/data/medicinesData';
 import { catalogService } from '@/services/catalogService';
 
 const bodyParts = [
@@ -100,7 +101,10 @@ export const MedicinePage: React.FC = () => {
         const rows = await catalogService.getMedicines();
         if (active) setRemedies(rows);
       } catch (error: any) {
-        if (active) setRemediesError(error?.message || 'Failed to load medicines');
+        if (active) {
+          setRemedies(mockSelfCareRemedies);
+          setRemediesError('Using local medicine data from frontend/src/data/medicinesData.ts');
+        }
       } finally {
         if (active) setLoadingRemedies(false);
       }
