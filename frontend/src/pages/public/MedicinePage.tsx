@@ -26,6 +26,7 @@ import {
 import { Search, VerifiedUser, LocalHospital, Healing, Info, Clear } from '@mui/icons-material';
 import { useUI } from '@/contexts/UIContext';
 import { VerifiedRemedy } from '@/types';
+import { mockSelfCareRemedies } from '@/data/medicinesData';
 import { catalogService } from '@/services/catalogService';
 import { mockSelfCareRemedies } from '@/data/medicinesData';
 
@@ -129,7 +130,11 @@ export const MedicinePage: React.FC = () => {
       } catch (error: any) {
         if (active) {
           setRemedies(mockSelfCareRemedies);
+<<<<<<< HEAD
           setRemediesError(error?.message || null);
+=======
+          setRemediesError('Using local medicine data from frontend/src/data/medicinesData.ts');
+>>>>>>> a30baaeec3b45154895a88445f1a245231b6a64e
         }
       } finally {
         if (active) setLoadingRemedies(false);

@@ -30,6 +30,7 @@ import { Search, LocalHospital, CheckCircle, Clear } from '@mui/icons-material';
 import { Disease, DiseaseCategory } from '@/types';
 import { BodyMap } from '@/components/ui/body-map/BodyMap';
 import { useUI } from '@/contexts/UIContext';
+import { mockDiseases } from '@/data/diseasesData';
 import { catalogService } from '@/services/catalogService';
 import { DiseaseSymptomsVideoSection } from '@/components/features/public/DiseaseLibrary/DiseaseSymptomsVideoSection';
 import { mockDiseases as localDiseases } from '@/data/diseasesData';
@@ -112,8 +113,13 @@ export const DiseasePage: React.FC = () => {
         if (active) setDiseases(merged);
       } catch (error: any) {
         if (active) {
+<<<<<<< HEAD
           setDiseases(localDiseases);
           setDiseasesError(error?.message || null);
+=======
+          setDiseases(mockDiseases);
+          setDiseasesError('Using local disease data from frontend/src/data/diseasesData.ts');
+>>>>>>> a30baaeec3b45154895a88445f1a245231b6a64e
         }
       } finally {
         if (active) setLoadingDiseases(false);

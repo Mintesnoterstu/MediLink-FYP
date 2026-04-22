@@ -16,6 +16,7 @@ import {
   Divider,
   MenuItem,
   Snackbar,
+  Chip,
 } from '@mui/material';
 import { useUI } from '@/contexts/UIContext';
 import { consentService, PendingConsentRequest } from '@/features/patient/services/consentService';
@@ -36,6 +37,40 @@ export const ConsentManagementPage: React.FC = () => {
 
   const notify = (severity: 'success' | 'error' | 'info', message: string) =>
     setToast({ open: true, severity, message });
+
+  const scopeLabel = React.useCallback((key: string) => {
+    const k = String(key || '').toLowerCase();
+    if (k === 'full_history') return isAmharic ? 'ሙሉ ታሪክ' : 'Full History';
+    if (k === 'allergies') return isAmharic ? 'አለርጂዎች' : 'Allergies';
+    if (k === 'medications') return isAmharic ? 'መድሀኒቶች' : 'Medications';
+    if (k === 'lab_results') return isAmharic ? 'የላብ ውጤቶች' : 'Lab Results';
+    return key.replace(/_/g, ' ');
+  }, [isAmharic]);
+
+  const renderScope = React.useCallback((scopeValue: any) => {
+    let parsed: any = scopeValue;
+    if (typeof scopeValue === 'string') {
+      try {
+        parsed = JSON.parse(scopeValue);
+      } catch {
+        parsed = scopeValue;
+      }
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return <Typography variant="body2">{String(scopeValue || '-')}</Typography>;
+    }
+    const enabled = Object.entries(parsed).filter(([, v]) => Boolean(v)).map(([k]) => k);
+    if (enabled.length === 0) {
+      return <Typography variant="body2" color="text.secondary">-</Typography>;
+    }
+    return (
+      <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
+        {enabled.map((k) => (
+          <Chip key={k} size="small" color="primary" variant="outlined" label={scopeLabel(k)} />
+        ))}
+      </Stack>
+    );
+  }, [scopeLabel]);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -152,7 +187,7 @@ export const ConsentManagementPage: React.FC = () => {
                   <TableCell>{c.facility_name || '-'}</TableCell>
                   <TableCell>{c.granted_at ? new Date(c.granted_at).toLocaleString() : '-'}</TableCell>
                   <TableCell>{c.expires_at ? new Date(c.expires_at).toLocaleString() : '-'}</TableCell>
-                  <TableCell>{typeof c.scope === 'string' ? c.scope : JSON.stringify(c.scope || {})}</TableCell>
+                  <TableCell>{renderScope(c.scope)}</TableCell>
                   <TableCell>{c.status}</TableCell>
                   <TableCell>
                     <Button size="small" color="error" variant="outlined" onClick={() => revokeConsent(c.id)}>
@@ -232,8 +267,8 @@ export const ConsentManagementPage: React.FC = () => {
                   fullWidth
                   placeholder={
                     isAmharic
-                      ? 'የሐኪም ስም / ተቋም / ፈቃድ ቁጥር'
-                      : 'Doctor name / facility / license number'
+                      ? 'የሐኪም ስም፣ ተቋም ወይም ፈቃድ ቁጥር'
+                      : 'Doctor name, facility, or license number'
                   }
                 />
                 <Button variant="contained">
@@ -266,7 +301,7 @@ export const ConsentManagementPage: React.FC = () => {
 
             <Box>
               <Typography variant="subtitle2" fontWeight={700}>
-                Select Duration / የጊዜ ገደብ ይምረጡ
+                {isAmharic ? 'የጊዜ ገደብ ይምረጡ' : 'Select Duration'}
               </Typography>
               <TextField
                 select
@@ -275,18 +310,18 @@ export const ConsentManagementPage: React.FC = () => {
                 onChange={(e) => setDurationDays(Number(e.target.value))}
                 size="small"
               >
-                <MenuItem value={1}>Single Visit (24 hours)</MenuItem>
-                <MenuItem value={30}>30 Days</MenuItem>
-                <MenuItem value={90}>90 Days</MenuItem>
-                <MenuItem value={365}>Ongoing (until revoked)</MenuItem>
+                <MenuItem value={1}>{isAmharic ? 'አንድ ጉብኝት (24 ሰዓት)' : 'Single Visit (24 hours)'}</MenuItem>
+                <MenuItem value={30}>{isAmharic ? '30 ቀናት' : '30 Days'}</MenuItem>
+                <MenuItem value={90}>{isAmharic ? '90 ቀናት' : '90 Days'}</MenuItem>
+                <MenuItem value={365}>{isAmharic ? 'ቀጣይ (እስኪሻር ድረስ)' : 'Ongoing (until revoked)'}</MenuItem>
               </TextField>
             </Box>
 
             <Box>
               <Typography variant="subtitle2" fontWeight={700}>
-                Reason for Access / የመዳረሻ ምክንያት
+                {isAmharic ? 'የመዳረሻ ምክንያት' : 'Reason for Access'}
               </Typography>
-              <TextField fullWidth placeholder="(Doctor-provided reason will appear here)" />
+              <TextField fullWidth placeholder={isAmharic ? 'የሐኪም ምክንያት እዚህ ይታያል' : '(Doctor-provided reason will appear here)'} />
             </Box>
 
             <Alert severity="info">

@@ -493,7 +493,7 @@ export const ProfessionalDashboard: React.FC = () => {
               <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
-                    Medical History / Records
+                    Medical History and Records
                   </Typography>
                   {(patientViewData?.records || []).slice(0, 8).map((r: any) => (
                     <Typography key={r.id} variant="body2" sx={{ mb: 0.5 }}>
