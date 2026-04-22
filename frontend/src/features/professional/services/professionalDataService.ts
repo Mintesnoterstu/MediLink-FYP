@@ -9,22 +9,37 @@ export interface ProfessionalPatientSearchResult {
 
 export const professionalDataService = {
   async searchPatients(query: string): Promise<ProfessionalPatientSearchResult[]> {
-    const response = await apiClient.get('/patients/search', {
+    const response = await apiClient.get('/professional/patients/search', {
       params: { q: query },
     });
     return response.data;
   },
 
   async requestConsent(patientId: string, reason?: string) {
-    const response = await apiClient.post('/professionals/consents/request', {
+    const response = await apiClient.post('/professional/consent/request', {
       patientId,
       reason: reason || '',
     });
     return response.data;
   },
 
+  async getPendingConsentRequests() {
+    const response = await apiClient.get('/professional/consents/pending');
+    return response.data;
+  },
+
   async getPatientDataWithConsent(patientId: string) {
-    const response = await apiClient.get(`/patients/${patientId}`);
+    const response = await apiClient.get(`/professional/patient/${patientId}`);
+    return response.data;
+  },
+
+  async getMyPatients() {
+    const response = await apiClient.get('/professional/patients');
+    return response.data;
+  },
+
+  async getPendingApprovals() {
+    const response = await apiClient.get('/professional/approvals/pending');
     return response.data;
   },
 
@@ -34,7 +49,12 @@ export const professionalDataService = {
     recordDate?: string;
     encryptedData: Record<string, unknown>;
   }) {
-    const response = await apiClient.post('/professionals/records', payload);
+    const response = await apiClient.post('/professional/records', payload);
+    return response.data;
+  },
+
+  async updateHealthRecord(recordId: string, encryptedData: Record<string, unknown>) {
+    const response = await apiClient.put(`/professional/records/${recordId}`, { encryptedData });
     return response.data;
   },
 };

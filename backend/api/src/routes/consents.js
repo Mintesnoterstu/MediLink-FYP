@@ -4,6 +4,7 @@ import { authRequired } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
 import { withRequestSession } from '../utils/dbSession.js';
 import { validateBody } from '../middleware/validation.js';
+import { sendChangeApprovedEmailToProfessional, sendConsentGrantedEmailToProfessional } from '../services/emailService.js';
 
 const router = Router();
 
@@ -28,13 +29,38 @@ router.get('/active', authRequired, requireRole('patient'), async (req, res, nex
   }
 });
 
+router.get('/requests', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const rows = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        SELECT cr.*, du.full_name AS doctor_name, f.name AS facility_name
+        FROM consent_requests cr
+        JOIN users du ON du.id = cr.doctor_id
+        LEFT JOIN facilities f ON f.id = du.facility_id
+        WHERE cr.status = 'pending'
+          AND cr.patient_id IN (SELECT id FROM patients WHERE user_id = $1)
+        ORDER BY cr.requested_at DESC
+      `,
+        [req.user.id],
+      );
+      return r.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.get('/pending', authRequired, requireRole('patient'), async (req, res, next) => {
   try {
     const rows = await withRequestSession(req, async (client) => {
       const r = await client.query(
         `
-        SELECT cr.*
+        SELECT cr.*, du.full_name AS doctor_name, f.name AS facility_name
         FROM consent_requests cr
+        JOIN users du ON du.id = cr.doctor_id
+        LEFT JOIN facilities f ON f.id = du.facility_id
         WHERE cr.status = 'pending'
           AND cr.patient_id IN (SELECT id FROM patients WHERE user_id = $1)
         ORDER BY cr.requested_at DESC
@@ -104,10 +130,30 @@ router.post(
         [row.patient_id, row.doctor_id, JSON.stringify(scope), String(durationDays)],
       );
 
-      return c.rows[0];
+      const full = await client.query(
+        `
+        SELECT c.*, pu.full_name AS patient_name, du.full_name AS doctor_name, du.email AS doctor_email
+        FROM consents c
+        JOIN patients p ON p.id = c.patient_id
+        JOIN users pu ON pu.id = p.user_id
+        JOIN users du ON du.id = c.doctor_id
+        WHERE c.id = $1
+        LIMIT 1
+      `,
+        [c.rows[0].id],
+      );
+
+      return full.rows[0];
     });
 
     if (!result) return res.status(404).json({ error: 'Consent request not found' });
+    await sendConsentGrantedEmailToProfessional({
+      toEmail: result.doctor_email || null,
+      doctorName: result.doctor_name || 'Doctor',
+      patientName: result.patient_name || 'Patient',
+      scope: JSON.stringify(result.scope || {}),
+      expiresAt: result.expires_at ? new Date(result.expires_at).toISOString() : 'N/A',
+    });
     return res.json({ success: true, consent: result });
   } catch (err) {
     return next(err);
@@ -146,6 +192,173 @@ router.get('/history', authRequired, requireRole('patient'), async (req, res, ne
         FROM consents c
         WHERE c.patient_id IN (SELECT id FROM patients WHERE user_id = $1)
         ORDER BY c.created_at DESC
+      `,
+        [req.user.id],
+      );
+      return r.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/audit', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const rows = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        SELECT action_type, actor_id, created_at, details
+        FROM audit_logs
+        WHERE details->>'patient_id' IN (
+          SELECT id::text FROM patients WHERE user_id = $1
+        )
+        ORDER BY created_at DESC
+        LIMIT 100
+      `,
+        [req.user.id],
+      );
+      return r.rows;
+    });
+    return res.json(rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/records/:id/approve', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const updated = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        UPDATE health_records hr
+        SET status = 'approved', approved_at = now(), disputed_at = NULL, dispute_reason = NULL
+        WHERE hr.id = $1
+          AND hr.patient_id IN (SELECT id FROM patients WHERE user_id = $2)
+        RETURNING hr.id, hr.patient_id, hr.created_by
+      `,
+        [req.params.id, req.user.id],
+      );
+      const row = r.rows[0] || null;
+      if (!row) return null;
+
+      // Restore consent for this doctor/nurse if it was auto-revoked.
+      await client.query(
+        `
+        UPDATE consents
+        SET status='active', revoked_at=NULL, auto_revoked=false
+        WHERE patient_id = $1
+          AND doctor_id = $2
+      `,
+        [row.patient_id, row.created_by],
+      );
+
+      // Mark latest pending consent_request (re-approval) as approved for audit clarity.
+      await client.query(
+        `
+        UPDATE consent_requests
+        SET status='approved', responded_at=now()
+        WHERE id = (
+          SELECT id
+          FROM consent_requests
+          WHERE patient_id = $1 AND doctor_id = $2 AND status = 'pending'
+          ORDER BY requested_at DESC
+          LIMIT 1
+        )
+      `,
+        [row.patient_id, row.created_by],
+      );
+
+      const info = await client.query(
+        `
+        SELECT pu.full_name AS patient_name, du.full_name AS doctor_name, du.email AS doctor_email
+        FROM patients p
+        JOIN users pu ON pu.id = p.user_id
+        JOIN users du ON du.id = $2
+        WHERE p.id = $1
+        LIMIT 1
+      `,
+        [row.patient_id, row.created_by],
+      );
+
+      return { row, info: info.rows[0] };
+    });
+    if (!updated) return res.status(404).json({ error: 'Record not found' });
+
+    await sendChangeApprovedEmailToProfessional({
+      toEmail: updated.info?.doctor_email || null,
+      doctorName: updated.info?.doctor_name || 'Doctor',
+      patientName: updated.info?.patient_name || 'Patient',
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+const disputeSchema = Joi.object({
+  reason: Joi.string().min(3).required(),
+});
+
+router.post('/records/:id/dispute', authRequired, requireRole('patient'), validateBody(disputeSchema), async (req, res, next) => {
+  try {
+    const updated = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        UPDATE health_records hr
+        SET status = 'disputed', disputed_at = now(), dispute_reason = $3
+        WHERE hr.id = $1
+          AND hr.patient_id IN (SELECT id FROM patients WHERE user_id = $2)
+        RETURNING hr.id
+      `,
+        [req.params.id, req.user.id, req.validatedBody.reason],
+      );
+      return r.rows[0] || null;
+    });
+    if (!updated) return res.status(404).json({ error: 'Record not found' });
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.post('/deny/:requestId', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const requestId = req.params.requestId;
+    const updated = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        UPDATE consent_requests
+        SET status='denied', responded_at=now()
+        WHERE id = $1
+          AND status = 'pending'
+          AND patient_id IN (SELECT id FROM patients WHERE user_id = $2)
+        RETURNING id
+      `,
+        [requestId, req.user.id],
+      );
+      return r.rows[0] || null;
+    });
+    if (!updated) return res.status(404).json({ error: 'Consent request not found' });
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/approvals/pending', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const rows = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        SELECT hr.id, hr.record_type, hr.created_at, hr.status, du.full_name AS doctor_name
+        FROM health_records hr
+        JOIN users du ON du.id = hr.created_by
+        WHERE hr.status = 'pending'
+          AND hr.patient_id IN (SELECT id FROM patients WHERE user_id = $1)
+        ORDER BY hr.created_at DESC
+        LIMIT 100
       `,
         [req.user.id],
       );

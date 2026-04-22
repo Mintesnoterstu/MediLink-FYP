@@ -19,6 +19,20 @@ function mapRoleForFrontend(role) {
   return 'admin';
 }
 
+function mapAdminLevel(role) {
+  if (role === 'zonal_admin') return 'zonal';
+  if (role === 'woreda_admin') return 'woreda';
+  if (role === 'city_admin') return 'city';
+  if (role === 'facility_admin') return 'facility';
+  return undefined;
+}
+
+function mapProfessionalType(role) {
+  if (role === 'doctor') return 'doctor';
+  if (role === 'nurse') return 'nurse';
+  return undefined;
+}
+
 function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
@@ -93,6 +107,9 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
           role: mapRoleForFrontend(user.role),
           backendRole: user.role,
           phone: user.phone,
+          adminLevel: mapAdminLevel(user.role),
+          professionalType: mapProfessionalType(user.role),
+          mustChangePassword: Boolean(user.must_change_password),
         },
       });
     }
@@ -111,6 +128,9 @@ router.post('/login', validateBody(loginSchema), async (req, res, next) => {
         name: user.full_name,
         role: mapRoleForFrontend(user.role),
         backendRole: user.role,
+        adminLevel: mapAdminLevel(user.role),
+        professionalType: mapProfessionalType(user.role),
+        mustChangePassword: Boolean(user.must_change_password),
       },
     });
   } catch (err) {
@@ -174,6 +194,8 @@ router.post('/verify-2fa', validateBody(verify2faSchema), async (req, res, next)
         name: user.full_name,
         role: mapRoleForFrontend(user.role),
         backendRole: user.role,
+        adminLevel: mapAdminLevel(user.role),
+        professionalType: mapProfessionalType(user.role),
       },
     });
   } catch (err) {
@@ -295,6 +317,7 @@ router.post('/reset-password', validateBody(resetPasswordSchema), async (req, re
 
     const newHash = await bcrypt.hash(newPassword, 10);
     await query('UPDATE users SET password_hash = $2 WHERE id = $1', [row.user_id, newHash]);
+    await query('UPDATE users SET must_change_password = false WHERE id = $1', [row.user_id]);
 
     return res.json({ success: true });
   } catch (err) {
@@ -334,6 +357,8 @@ router.post('/register', validateBody(registerSchema), async (req, res, next) =>
         name: user.full_name,
         role: mapRoleForFrontend(user.role),
         backendRole: user.role,
+        adminLevel: mapAdminLevel(user.role),
+        professionalType: mapProfessionalType(user.role),
       },
     });
   } catch (err) {
@@ -365,6 +390,8 @@ router.patch('/users/:userId', authRequired, async (req, res, next) => {
       role: mapRoleForFrontend(r.rows[0].role),
       backendRole: r.rows[0].role,
       language: language || 'en',
+      adminLevel: mapAdminLevel(r.rows[0].role),
+      professionalType: mapProfessionalType(r.rows[0].role),
     });
   } catch (err) {
     return next(err);

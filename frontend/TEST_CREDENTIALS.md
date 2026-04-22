@@ -56,6 +56,7 @@ These work when frontend points to the backend API (for example `VITE_API_BASE_U
 - **City Admin**: `hiwot.a@jimmacity.gov.et`
 
 ### Real Government/Facility Admin Accounts (FYP)
+- **Zonal Admin (Requested)**: `teklemintesnot2@gmail.com` / `Mintesnot@1234&`
 - **Zonal Admin**: `abdi.m@jimmazone.gov.et` / `password`
 - **Woreda Admin (Jimma)**: `sara.m@jimmaworeda.gov.et` / `password`
 - **City Admin (Jimma City)**: `hiwot.a@jimmacity.gov.et` / `password`

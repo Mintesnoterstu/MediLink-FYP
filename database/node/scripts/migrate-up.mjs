@@ -21,6 +21,10 @@ const filesInOrder = [
   '008_auth_security_tables.up.sql',
   '009_seed_real_admin_accounts.up.sql',
   '010_seed_real_clinical_accounts.up.sql',
+  '011_zonal_admin_support.up.sql',
+  '012_woreda_city_admin_support.up.sql',
+  '013_facility_admin_support.up.sql',
+  '014_consent_flow_support.up.sql',
 ];
 
 const databaseUrl = process.env.DATABASE_URL;
@@ -38,14 +42,52 @@ try {
   // eslint-disable-next-line no-console
   console.log('Connected to PostgreSQL.');
 
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      id serial PRIMARY KEY,
+      filename text UNIQUE NOT NULL,
+      applied_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
   for (const file of filesInOrder) {
+    const already = await client.query('SELECT 1 FROM schema_migrations WHERE filename = $1 LIMIT 1', [file]);
+    if (already.rows[0]) {
+      // eslint-disable-next-line no-console
+      console.log(`Skipping ${file} (already applied)`);
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     const fullPath = path.join(migrationsDir, file);
     const sql = await fs.readFile(fullPath, 'utf8');
     // eslint-disable-next-line no-console
     console.log(`Applying ${file} ...`);
-    await client.query(sql);
-    // eslint-disable-next-line no-console
-    console.log(`Applied ${file}`);
+    try {
+      await client.query('BEGIN');
+      await client.query(sql);
+      await client.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [file]);
+      await client.query('COMMIT');
+      // eslint-disable-next-line no-console
+      console.log(`Applied ${file}`);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      const msg = String(error?.message || '');
+      const canTreatAsApplied =
+        msg.includes('already exists') ||
+        msg.includes('duplicate key') ||
+        msg.includes('already applied') ||
+        msg.includes('conflicts with existing constraint') ||
+        msg.includes('constraint') && msg.includes('already exists');
+
+      if (canTreatAsApplied) {
+        // eslint-disable-next-line no-console
+        console.warn(`Warning: ${file} reported existing objects. Marking as applied.`);
+        await client.query('INSERT INTO schema_migrations (filename) VALUES ($1) ON CONFLICT (filename) DO NOTHING', [file]);
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+      throw error;
+    }
   }
 
   // eslint-disable-next-line no-console

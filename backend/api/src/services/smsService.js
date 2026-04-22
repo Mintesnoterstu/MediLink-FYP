@@ -41,3 +41,10 @@ export async function sendCredentialsSms(toPhone, payload) {
   await client.messages.create({ to: toPhone, from: fromPhone, body });
 }
 
+export async function sendPatientRegistrationSms(toPhone, payload) {
+  // Patient registration is EMAIL ONLY by product requirement.
+  // This function is kept as a no-op for backward compatibility.
+  // eslint-disable-next-line no-console
+  console.warn('[sms] Patient registration SMS is disabled (email-only).', { toPhone, payload });
+}
+

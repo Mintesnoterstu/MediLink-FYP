@@ -38,6 +38,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUI } from '@/contexts/UIContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '@/features/auth/services/authService';
+import { professionalDataService, ProfessionalPatientSearchResult } from '@/features/professional/services/professionalDataService';
+import { apiClient } from '@/services/apiClient';
+import { Snackbar, Alert } from '@mui/material';
 
 export const ProfessionalDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -50,6 +53,13 @@ export const ProfessionalDashboard: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [searchResults, setSearchResults] = React.useState<ProfessionalPatientSearchResult[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const [pendingRequests, setPendingRequests] = React.useState<any[]>([]);
+  const [toast, setToast] = React.useState<{ open: boolean; severity: 'success' | 'error' | 'info'; message: string }>(
+    { open: false, severity: 'info', message: '' },
+  );
 
   const name = user?.name || (isAmharic ? 'ዶ/ር ታደሰ በቀለ' : 'Dr. Tadesse Bekele');
 
@@ -92,6 +102,48 @@ export const ProfessionalDashboard: React.FC = () => {
       setIsSavingSettings(false);
     }
   };
+
+  const runSearch = async () => {
+    if (!searchTerm.trim()) return;
+    try {
+      setIsSearching(true);
+      const results = await professionalDataService.searchPatients(searchTerm.trim());
+      setSearchResults(results || []);
+    } catch (e) {
+      setToast({ open: true, severity: 'error', message: e instanceof Error ? e.message : 'Search failed' });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const requestConsent = async (patientId: string) => {
+    try {
+      await professionalDataService.requestConsent(patientId, 'Request access for care');
+      setToast({ open: true, severity: 'success', message: 'Consent request sent.' });
+      const p = await professionalDataService.getPendingConsentRequests();
+      setPendingRequests(Array.isArray(p) ? p : []);
+    } catch (e) {
+      setToast({ open: true, severity: 'error', message: e instanceof Error ? e.message : 'Request failed' });
+    }
+  };
+
+  const cancelRequest = async (requestId: string) => {
+    try {
+      // minimal: mark as rejected by deleting is not supported in backend; so just inform for now
+      await apiClient.put(`/professionals/consents/request/${requestId}`, { status: 'cancelled' }).catch(() => null);
+      setToast({ open: true, severity: 'info', message: 'Cancel is not implemented on backend yet.' });
+    } catch {
+      setToast({ open: true, severity: 'info', message: 'Cancel is not implemented on backend yet.' });
+    }
+  };
+
+  React.useEffect(() => {
+    if (tab !== 2) return;
+    professionalDataService
+      .getPendingConsentRequests()
+      .then((p) => setPendingRequests(Array.isArray(p) ? p : []))
+      .catch(() => setPendingRequests([]));
+  }, [tab]);
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
@@ -273,6 +325,8 @@ export const ProfessionalDashboard: React.FC = () => {
               <TextField
                 fullWidth
                 label={isAmharic ? 'የፍለጋ ቃል' : 'Search Term'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </Grid>
             <Grid item xs={12} md={2}>
@@ -280,6 +334,8 @@ export const ProfessionalDashboard: React.FC = () => {
                 fullWidth
                 variant="contained"
                 sx={{ height: '100%' }}
+                disabled={isSearching}
+                onClick={runSearch}
               >
                 {isAmharic ? 'ፈልግ' : 'SEARCH'}
               </Button>
@@ -287,45 +343,36 @@ export const ProfessionalDashboard: React.FC = () => {
           </Grid>
 
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    {isAmharic
-                      ? 'አልማዝ ከበደ | ETH-2026-0315-AB123 | ጅማ ወረዳ'
-                      : 'Almaz Kebede | ETH-2026-0315-AB123 | Jimma Woreda'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    {isAmharic
-                      ? 'የፈቃድ ሁኔታ፡ ✅ ንቁ (ሙሉ ታሪክ)'
-                      : 'Consent Status: ✅ ACTIVE (Full History)'}
-                  </Typography>
-                  <Button variant="contained" size="small">
-                    {isAmharic ? 'ዳሽቦርድ ተመልከት' : 'VIEW DASHBOARD'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    {isAmharic
-                      ? 'ተክሌ ኃይሉ | ETH-2026-0315-CD456 | ሰካ ወረዳ'
-                      : 'Tekle Hailu | ETH-2026-0315-CD456 | Seka Woreda'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    {isAmharic
-                      ? 'የፈቃድ ሁኔታ፡ ❌ ንቁ ፈቃድ የለም'
-                      : 'Consent Status: ❌ NO ACTIVE CONSENT'}
-                  </Typography>
-                  <Button variant="contained" size="small">
-                    {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST CONSENT'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+            {searchResults.map((p) => (
+              <Grid item xs={12} md={6} key={p.id}>
+                <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                      {p.full_name} | {p.ethiopian_health_id}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {isAmharic ? 'የፈቃድ ሁኔታ፡ ' : 'Consent Status: '}
+                      {p.has_active_consent ? '✅ ACTIVE' : '❌ NO ACTIVE CONSENT'}
+                    </Typography>
+                    <Stack direction="row" spacing={1}>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        disabled={!p.has_active_consent}
+                        onClick={() => setToast({ open: true, severity: 'info', message: 'Open patient view is next.' })}
+                      >
+                        {isAmharic ? 'ዳሽቦርድ ተመልከት' : 'VIEW DASHBOARD'}
+                      </Button>
+                      {!p.has_active_consent && (
+                        <Button variant="contained" size="small" onClick={() => requestConsent(p.id)}>
+                          {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST CONSENT'}
+                        </Button>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
         </Box>
       )}
@@ -334,38 +381,40 @@ export const ProfessionalDashboard: React.FC = () => {
       {tab === 2 && (
         <Box>
           <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
-            {isAmharic
-              ? 'በመጠባበቅ ላይ ያሉ የፈቃድ ጥያቄዎች (2)'
-              : 'PENDING CONSENT REQUESTS (2)'}
+            {isAmharic ? 'በመጠባበቅ ላይ ያሉ የፈቃድ ጥያቄዎች' : 'PENDING CONSENT REQUESTS'}
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-                <CardContent>
-                  <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                    {isAmharic
-                      ? 'ታካሚ፡ አበበች መሐመድ | ETH-2026-0315-EF789'
-                      : 'Patient: Abebech Mohammed | ETH-2026-0315-EF789'}
-                  </Typography>
-                  <Typography variant="body2">
-                    {isAmharic
-                      ? 'የተጠየቀበት፡ 2026-03-16 | ምክንያት፡ የመጀመሪያ ምክክር'
-                      : 'Requested: 2026-03-16 | Reason: Initial consultation'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ mb: 2 }}>
-                    {isAmharic
-                      ? 'ሁኔታ፡ የታካሚ ማጽደቅ በመጠባበቅ ላይ'
-                      : 'Status: Waiting for patient approval'}
-                  </Typography>
-                  <Button variant="outlined" size="small">
-                    {isAmharic ? 'ጥያቄ ሰርዝ' : 'CANCEL REQUEST'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </Grid>
+            {pendingRequests.map((r) => (
+              <Grid item xs={12} md={6} key={r.id}>
+                <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                      {isAmharic ? 'ታካሚ ID፡ ' : 'Patient ID: '} {r.patient_id}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                      {isAmharic ? 'ሁኔታ፡ ' : 'Status: '} {r.status}
+                    </Typography>
+                    <Button variant="outlined" size="small" onClick={() => cancelRequest(r.id)}>
+                      {isAmharic ? 'ጥያቄ ሰርዝ' : 'CANCEL REQUEST'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
         </Box>
       )}
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3500}
+        onClose={() => setToast((t) => ({ ...t, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={toast.severity} variant="filled" onClose={() => setToast((t) => ({ ...t, open: false }))}>
+          {toast.message}
+        </Alert>
+      </Snackbar>
 
       {/* Tab 4: My Schedule */}
       {tab === 3 && (

@@ -49,6 +49,13 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUI } from '@/contexts/UIContext';
 import { useNavigate } from 'react-router-dom';
 import { patientRegistrationService } from '@/features/admin/services/patientRegistrationService';
+import { apiClient } from '@/services/apiClient';
+import { professionalService } from '@/features/admin/services/professionalService';
+import { institutionService } from '@/features/admin/services/institutionService';
+import { ZonalDashboard } from '@/pages/admin/ZonalDashboard';
+import { WoredaDashboard } from '@/pages/admin/WoredaDashboard';
+import { CityDashboard } from '@/pages/admin/CityDashboard';
+import { FacilityDashboard } from '@/pages/admin/FacilityDashboard';
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -63,6 +70,18 @@ export const AdminDashboard: React.FC = () => {
 
   // Admin hierarchy level (defaults to facility admin for existing demo)
   const adminLevel = (user as any)?.adminLevel || 'facility'; // 'zonal' | 'woreda' | 'city' | 'facility'
+  if (adminLevel === 'zonal') {
+    return <ZonalDashboard />;
+  }
+  if (adminLevel === 'woreda') {
+    return <WoredaDashboard />;
+  }
+  if (adminLevel === 'city') {
+    return <CityDashboard />;
+  }
+  if (adminLevel === 'facility') {
+    return <FacilityDashboard />;
+  }
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
   const [snackbar, setSnackbar] = React.useState<{
@@ -81,6 +100,9 @@ export const AdminDashboard: React.FC = () => {
   const [newAdminEmail, setNewAdminEmail] = React.useState('');
   const [newAdminPhone, setNewAdminPhone] = React.useState('');
   const [isRegisteringPatient, setIsRegisteringPatient] = React.useState(false);
+  const [isCreatingAdmin, setIsCreatingAdmin] = React.useState(false);
+  const [isCreatingFacility, setIsCreatingFacility] = React.useState(false);
+  const [isCreatingProfessional, setIsCreatingProfessional] = React.useState(false);
   const [patientForm, setPatientForm] = React.useState({
     fullName: '',
     dateOfBirth: '',
@@ -185,10 +207,72 @@ export const AdminDashboard: React.FC = () => {
       toast('warning', isAmharic ? 'እባክዎ ሁሉንም አስፈላጊ መረጃ ያስገቡ።' : 'Please fill all required fields.');
       return;
     }
-    toast('success', isAmharic ? 'አስተዳዳሪ በተሳካ ሁኔታ ተፈጥሯል (Mock).' : 'Admin created successfully (Mock).');
-    setNewAdminName('');
-    setNewAdminEmail('');
-    setNewAdminPhone('');
+    const role =
+      createLevel === 'woreda' ? 'woreda_admin' : createLevel === 'city' ? 'city_admin' : 'facility_admin';
+    const password = 'password';
+    setIsCreatingAdmin(true);
+    apiClient
+      .post('/admin/users', {
+        email: newAdminEmail.trim(),
+        phone: newAdminPhone.trim(),
+        fullName: newAdminName.trim(),
+        role,
+        password,
+      })
+      .then(() => {
+        toast(
+          'success',
+          isAmharic ? `አስተዳዳሪ ተፈጥሯል። ፓስወርድ: ${password}` : `Admin created. Password: ${password}`,
+        );
+        setNewAdminName('');
+        setNewAdminEmail('');
+        setNewAdminPhone('');
+      })
+      .catch((e) => {
+        toast('error', e instanceof Error ? e.message : 'Failed to create admin');
+      })
+      .finally(() => setIsCreatingAdmin(false));
+  };
+
+  const handleRegisterFacility = async () => {
+    try {
+      setIsCreatingFacility(true);
+      // Minimal demo: create a facility under Jimma woreda seed id used in migrations
+      const woredaId = '22222222-2222-2222-2222-222222222201';
+      const created = await institutionService.createFacility({
+        name: 'New Demo Facility',
+        nameAm: 'አዲስ ዲሞ ተቋም',
+        type: 'hospital',
+        typeAm: 'ሆስፒታል',
+        woredaId,
+        licenseNumber: `DEMO-${Date.now()}`,
+      });
+      toast('success', isAmharic ? 'ተቋም ተመዝግቧል።' : 'Facility registered.');
+      return created;
+    } catch (e) {
+      toast('error', e instanceof Error ? e.message : 'Failed to register facility');
+    } finally {
+      setIsCreatingFacility(false);
+    }
+  };
+
+  const handleCreateProfessional = async () => {
+    try {
+      setIsCreatingProfessional(true);
+      const password = 'password';
+      await professionalService.createProfessional({
+        email: `demo.pro.${Date.now()}@medilink.demo`,
+        fullName: 'Demo Professional',
+        role: 'doctor',
+        licenseNumber: `MOH-${Date.now()}`,
+        password,
+      });
+      toast('success', isAmharic ? `ባለሙያ ተፈጥሯል። ፓስወርድ: ${password}` : `Professional created. Password: ${password}`);
+    } catch (e) {
+      toast('error', e instanceof Error ? e.message : 'Failed to create professional');
+    } finally {
+      setIsCreatingProfessional(false);
+    }
   };
 
   const handlePatientFormChange = (key: keyof typeof patientForm, value: string) => {
@@ -265,6 +349,19 @@ export const AdminDashboard: React.FC = () => {
     window.addEventListener('open-role-dashboard-menu', openFromHeader);
     return () => window.removeEventListener('open-role-dashboard-menu', openFromHeader);
   }, []);
+
+  // Keep select value valid when user/admin level arrives after initial render.
+  React.useEffect(() => {
+    if (adminLevel === 'zonal') {
+      if (!['woreda', 'city'].includes(createLevel)) setCreateLevel('woreda');
+      return;
+    }
+    if (adminLevel === 'woreda' || adminLevel === 'city') {
+      if (createLevel !== 'facility') setCreateLevel('facility');
+      return;
+    }
+    if (createLevel !== 'none') setCreateLevel('none');
+  }, [adminLevel, createLevel]);
 
   return (
     <Box
@@ -468,36 +565,36 @@ export const AdminDashboard: React.FC = () => {
                   {isAmharic ? 'አዲስ አስተዳዳሪ ፍጠር' : 'Create new admin'}
                 </Typography>
                 <Stack spacing={1}>
-                  <FormControl fullWidth>
-                    <InputLabel>{isAmharic ? 'የሚፈጠር ደረጃ' : 'Create level'}</InputLabel>
-                    <Select
-                      label={isAmharic ? 'የሚፈጠር ደረጃ' : 'Create level'}
-                      value={createLevel}
-                      onChange={(e) => setCreateLevel(String(e.target.value))}
-                    >
-                      {adminLevel === 'zonal' && (
-                        <>
-                          <MenuItem value="woreda">{isAmharic ? 'የወረዳ አስተዳዳሪ' : 'Woreda Admin'}</MenuItem>
-                          <MenuItem value="city">{isAmharic ? 'የከተማ አስተዳዳሪ' : 'City Admin'}</MenuItem>
-                        </>
-                      )}
-                      {(adminLevel === 'woreda' || adminLevel === 'city') && (
-                        <MenuItem value="facility">{isAmharic ? 'የተቋም አስተዳዳሪ' : 'Facility Admin'}</MenuItem>
-                      )}
-                      {adminLevel === 'facility' && (
-                        <MenuItem value="none" disabled>
-                          {isAmharic ? 'አይፈቀድም' : 'Not allowed'}
-                        </MenuItem>
-                      )}
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    fullWidth
+                    select
+                    label={isAmharic ? 'የሚፈጠር ደረጃ' : 'Create level'}
+                    value={createLevel}
+                    onChange={(e) => setCreateLevel(String(e.target.value))}
+                    SelectProps={{ native: true }}
+                  >
+                    {adminLevel === 'zonal' && (
+                      <>
+                        <option value="woreda">{isAmharic ? 'የወረዳ አስተዳዳሪ' : 'Woreda Admin'}</option>
+                        <option value="city">{isAmharic ? 'የከተማ አስተዳዳሪ' : 'City Admin'}</option>
+                      </>
+                    )}
+                    {(adminLevel === 'woreda' || adminLevel === 'city') && (
+                      <option value="facility">{isAmharic ? 'የተቋም አስተዳዳሪ' : 'Facility Admin'}</option>
+                    )}
+                    {adminLevel === 'facility' && (
+                      <option value="none" disabled>
+                        {isAmharic ? 'አይፈቀድም' : 'Not allowed'}
+                      </option>
+                    )}
+                  </TextField>
                   <TextField fullWidth label={isAmharic ? 'ሙሉ ስም' : 'Full name'} value={newAdminName} onChange={(e) => setNewAdminName(e.target.value)} />
                   <TextField fullWidth label={isAmharic ? 'ኢሜይል' : 'Email'} value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} />
                   <TextField fullWidth label={isAmharic ? 'ስልክ' : 'Phone'} value={newAdminPhone} onChange={(e) => setNewAdminPhone(e.target.value)} />
                   <Button
                     variant="contained"
-                    disabled={adminLevel === 'facility'}
                     onClick={handleCreateAdmin}
+                    disabled={adminLevel === 'facility' || isCreatingAdmin}
                   >
                     {isAmharic ? 'ፍጠር' : 'Create'}
                   </Button>
@@ -535,13 +632,8 @@ export const AdminDashboard: React.FC = () => {
             </Typography>
             <Button
               variant="contained"
-              disabled={!(adminLevel === 'woreda' || adminLevel === 'city')}
-              onClick={() =>
-                toast(
-                  'success',
-                  isAmharic ? 'ተቋም መመዝገብ (Mock) ተጠናቋል።' : 'Facility registered (Mock).'
-                )
-              }
+              disabled={!(adminLevel === 'woreda' || adminLevel === 'city') || isCreatingFacility}
+              onClick={handleRegisterFacility}
             >
               {isAmharic ? 'አዲስ ተቋም መመዝገብ' : 'Register New Facility'}
             </Button>
@@ -566,13 +658,8 @@ export const AdminDashboard: React.FC = () => {
             </Typography>
             <Button
               variant="contained"
-              disabled={adminLevel !== 'facility'}
-              onClick={() =>
-                toast(
-                  'success',
-                  isAmharic ? 'ባለሙያ ፍጠር (Mock) ተጠናቋል።' : 'Professional created (Mock).'
-                )
-              }
+              disabled={adminLevel !== 'facility' || isCreatingProfessional}
+              onClick={handleCreateProfessional}
             >
               {isAmharic ? 'አዲስ ባለሙያ ፍጠር' : 'Create Professional'}
             </Button>

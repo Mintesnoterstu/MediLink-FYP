@@ -10,6 +10,7 @@ import { withRequestSession } from '../utils/dbSession.js';
 import { encryptJson, decryptJson } from '../utils/encryption.js';
 import { sendCredentialsSms } from '../services/smsService.js';
 import { withMedilinkSession } from '../config/database.js';
+import { query } from '../config/database.js';
 
 const router = Router();
 
@@ -130,6 +131,171 @@ router.post(
     }
   },
 );
+
+// Logged-in patient shortcut: maps user -> patient row
+router.get('/me', authRequired, async (req, res, next) => {
+  try {
+    const payload = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        SELECT p.*, u.email, u.phone, u.full_name
+        FROM patients p
+        JOIN users u ON u.id = p.user_id
+        WHERE p.user_id = $1
+        LIMIT 1
+      `,
+        [req.user.id],
+      );
+      const patient = r.rows[0] || null;
+      if (!patient) return null;
+      const meds = await client.query(
+        `
+        SELECT id, name, dosage, frequency, start_date, end_date, reminder_enabled, notes
+        FROM medications
+        WHERE patient_id = $1
+        ORDER BY created_at DESC
+      `,
+        [patient.id],
+      );
+      const vitals = await client.query(
+        `
+        SELECT recorded_at, blood_pressure, heart_rate, temperature, weight
+        FROM vital_signs
+        WHERE patient_id = $1
+        ORDER BY recorded_at DESC
+      `,
+        [patient.id],
+      );
+      return { patient, meds: meds.rows, vitals: vitals.rows };
+    });
+
+    if (!payload) return res.status(404).json({ error: 'Patient not found' });
+    const row = payload.patient;
+
+    let decrypted = {};
+    try {
+      if (row.encrypted_data) decrypted = decryptJson(row.encrypted_data);
+    } catch {
+      decrypted = {};
+    }
+
+    return res.json({
+      id: row.id,
+      userId: row.user_id,
+      email: row.email,
+      phone: row.phone,
+      fullName: row.full_name,
+      ethiopianHealthId: row.ethiopian_health_id,
+      dateOfBirth: row.date_of_birth,
+      gender: row.gender,
+      facilityId: row.facility_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      encryptedData: decrypted,
+      age: row.date_of_birth
+        ? Math.max(0, new Date().getFullYear() - new Date(row.date_of_birth).getFullYear())
+        : null,
+      medicalHistory: [],
+      currentMedications: payload.meds.map((m) => ({
+        id: m.id,
+        name: m.name,
+        dosage: m.dosage,
+        frequency: m.frequency,
+        startDate: m.start_date,
+        endDate: m.end_date,
+        reminderEnabled: m.reminder_enabled,
+        notes: m.notes,
+      })),
+      allergies: [],
+      vitalSigns: payload.vitals.map((v) => ({
+        date: v.recorded_at,
+        bloodPressure: v.blood_pressure,
+        heartRate: v.heart_rate,
+        temperature: v.temperature ? Number(v.temperature) : null,
+        weight: v.weight ? Number(v.weight) : null,
+      })),
+      emergencyContacts: [],
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/profile', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const r = await query(
+      `
+      SELECT p.id AS patient_id, p.ethiopian_health_id, p.date_of_birth, p.gender, p.region, p.zone, p.woreda, p.kebele,
+             u.id AS user_id, u.full_name, u.email, u.phone, u.created_at
+      FROM patients p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.user_id = $1
+      LIMIT 1
+    `,
+      [req.user.id],
+    );
+    const row = r.rows[0];
+    if (!row) return res.status(404).json({ error: 'Patient profile not found' });
+    return res.json({
+      patientId: row.patient_id,
+      userId: row.user_id,
+      fullName: row.full_name,
+      email: row.email,
+      phone: row.phone,
+      ethiopianHealthId: row.ethiopian_health_id,
+      dateOfBirth: row.date_of_birth,
+      gender: row.gender,
+      region: row.region,
+      zone: row.zone,
+      woreda: row.woreda,
+      kebele: row.kebele,
+      createdAt: row.created_at,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().min(6).required(),
+  newPassword: Joi.string().min(6).required(),
+});
+
+router.put('/change-password', authRequired, requireRole('patient'), validateBody(changePasswordSchema), async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.validatedBody;
+    const userRes = await query('SELECT id, password_hash FROM users WHERE id = $1 LIMIT 1', [req.user.id]);
+    const user = userRes.rows[0];
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const ok = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!ok) return res.status(400).json({ error: 'Current password is incorrect' });
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await query('UPDATE users SET password_hash = $2, must_change_password = false WHERE id = $1', [req.user.id, newHash]);
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/audit', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const r = await query(
+      `
+      SELECT action_type, actor_id, details, created_at
+      FROM audit_logs
+      WHERE details->>'patient_id' IN (
+        SELECT id::text FROM patients WHERE user_id = $1
+      )
+      ORDER BY created_at DESC
+      LIMIT 100
+    `,
+      [req.user.id],
+    );
+    return res.json(r.rows);
+  } catch (err) {
+    return next(err);
+  }
+});
 
 router.get('/search', authRequired, requireRole('doctor', 'nurse'), async (req, res, next) => {
   try {

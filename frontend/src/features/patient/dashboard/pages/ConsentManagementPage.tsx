@@ -11,19 +11,91 @@ import {
   TableCell,
   TableBody,
   Button,
-  Checkbox,
-  FormControlLabel,
   Stack,
   TextField,
-  RadioGroup,
-  Radio,
   Divider,
+  MenuItem,
+  Snackbar,
 } from '@mui/material';
 import { useUI } from '@/contexts/UIContext';
+import { consentService, PendingConsentRequest } from '@/features/patient/services/consentService';
 
 export const ConsentManagementPage: React.FC = () => {
   const { language } = useUI();
   const isAmharic = language === 'am';
+  const [loading, setLoading] = React.useState(false);
+  const [pendingRequests, setPendingRequests] = React.useState<PendingConsentRequest[]>([]);
+  const [activeConsents, setActiveConsents] = React.useState<any[]>([]);
+  const [scope, setScope] = React.useState<'full_history' | 'allergies' | 'medications' | 'lab_results'>('full_history');
+  const [durationDays, setDurationDays] = React.useState(30);
+  const [toast, setToast] = React.useState<{ open: boolean; severity: 'success' | 'error' | 'info'; message: string }>({
+    open: false,
+    severity: 'info',
+    message: '',
+  });
+
+  const notify = (severity: 'success' | 'error' | 'info', message: string) =>
+    setToast({ open: true, severity, message });
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const [pending, active] = await Promise.all([
+        consentService.getPendingRequests(),
+        consentService.getActiveConsents(),
+      ]);
+      setPendingRequests(Array.isArray(pending) ? pending : []);
+      setActiveConsents(Array.isArray(active) ? active : []);
+    } catch (e: any) {
+      notify('error', e?.response?.data?.error || e?.message || 'Failed to load consent data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    load();
+  }, [load]);
+
+  const grantRequest = async (requestId: string) => {
+    try {
+      const scopePayload = {
+        full_history: scope === 'full_history',
+        allergies: scope === 'allergies',
+        medications: scope === 'medications',
+        lab_results: scope === 'lab_results',
+      };
+      await consentService.grantConsentForPatient({
+        requestId,
+        scope: scopePayload,
+        durationDays,
+      });
+      notify('success', 'Consent granted successfully.');
+      await load();
+    } catch (e: any) {
+      notify('error', e?.response?.data?.error || e?.message || 'Failed to grant consent');
+    }
+  };
+
+  const denyRequest = async (requestId: string) => {
+    try {
+      await consentService.denyConsentRequest(requestId);
+      notify('info', 'Consent request denied.');
+      await load();
+    } catch (e: any) {
+      notify('error', e?.response?.data?.error || e?.message || 'Failed to deny request');
+    }
+  };
+
+  const revokeConsent = async (consentId: string) => {
+    try {
+      await consentService.revokeConsent({ consentId });
+      notify('info', 'Consent revoked.');
+      await load();
+    } catch (e: any) {
+      notify('error', e?.response?.data?.error || e?.message || 'Failed to revoke consent');
+    }
+  };
 
   return (
     <Box>
@@ -55,44 +127,27 @@ export const ConsentManagementPage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {[
-                [
-                  'Dr. Tadesse Bekele / ዶ/ር ታደሰ በቀለ',
-                  'Jimma Hospital / ጅማ ሆስፒታል',
-                  'Jan 10, 2026',
-                  'Feb 10, 2026',
-                  'Full History, Allergies, Medications',
-                  'Active / ንቁ',
-                ],
-                [
-                  'Dr. Abebech Mohammed / ዶ/ር አበበች መሐመድ',
-                  'Bishoftu Health Center / ቢሾፍቱ ጤና ጣቢያ',
-                  'Jan 5, 2026',
-                  'Ongoing',
-                  'Allergies Only',
-                  'Active / ንቁ',
-                ],
-              ].map((c) => (
-                <TableRow key={c[0]}>
-                  <TableCell>{isAmharic ? c[0].split('/')[1] : c[0].split('/')[0]}</TableCell>
-                  <TableCell>{isAmharic ? c[1].split('/')[1] : c[1].split('/')[0]}</TableCell>
-                  <TableCell>{isAmharic ? 'ጃንዋሪ 10፣ 2026' : c[2]}</TableCell>
-                  <TableCell>{isAmharic ? 'ፌብሩዋሪ 10፣ 2026' : c[3]}</TableCell>
-                  <TableCell>
-                    {isAmharic
-                      ? 'ሙሉ ታሪክ፣ አለርጂዎች፣ መድሀኒቶች'
-                      : 'Full History, Allergies, Medications'}
+              {activeConsents.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <Typography variant="body2" color="text.secondary">
+                      {loading ? 'Loading...' : isAmharic ? 'ምንም ንቁ ፈቃድ የለም' : 'No active consents'}
+                    </Typography>
                   </TableCell>
-                  <TableCell>{isAmharic ? 'ንቁ' : 'Active'}</TableCell>
+                </TableRow>
+              )}
+              {activeConsents.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>{c.doctor_name || c.doctor_id}</TableCell>
+                  <TableCell>{c.facility_name || '-'}</TableCell>
+                  <TableCell>{c.granted_at ? new Date(c.granted_at).toLocaleString() : '-'}</TableCell>
+                  <TableCell>{c.expires_at ? new Date(c.expires_at).toLocaleString() : '-'}</TableCell>
+                  <TableCell>{typeof c.scope === 'string' ? c.scope : JSON.stringify(c.scope || {})}</TableCell>
+                  <TableCell>{c.status}</TableCell>
                   <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      <Button size="small" color="error" variant="outlined">
-                        {isAmharic ? 'ሻርቅ' : 'REVOKE'}
-                      </Button>
-                      <Button size="small">
-                        {isAmharic ? 'የመዳረሻ መዝገብ ይመልከቱ' : 'View Access Log'}
-                      </Button>
-                    </Stack>
+                    <Button size="small" color="error" variant="outlined" onClick={() => revokeConsent(c.id)}>
+                      {isAmharic ? 'ሻርቅ' : 'REVOKE'}
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -119,31 +174,33 @@ export const ConsentManagementPage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              <TableRow>
-                <TableCell>
-                  {isAmharic
-                    ? 'ዶ/ር ብሩክ አለሙ'
-                    : 'Dr. Biruk Alemu'}
-                </TableCell>
-                <TableCell>{isAmharic ? 'ጅማ ሆስፒታል' : 'Jimma Hospital'}</TableCell>
-                <TableCell>{isAmharic ? 'ጃንዋሪ 15፣ 2026' : 'Jan 15, 2026'}</TableCell>
-                <TableCell>
-                  {isAmharic ? 'ተከታታይ ሕክምና' : 'Follow-up treatment'}
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Button size="small" variant="contained" color="success">
-                      {isAmharic ? 'ፍቀድ' : 'APPROVE'}
-                    </Button>
-                    <Button size="small" variant="outlined" color="error">
-                      {isAmharic ? 'ከልክል' : 'DENY'}
-                    </Button>
-                    <Button size="small">
-                      {isAmharic ? 'ጥያቄውን ይመልከቱ' : 'VIEW REQUEST'}
-                    </Button>
-                  </Stack>
-                </TableCell>
-              </TableRow>
+              {pendingRequests.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <Typography variant="body2" color="text.secondary">
+                      {loading ? 'Loading...' : isAmharic ? 'ምንም በመጠባበቅ ላይ ጥያቄ የለም' : 'No pending consent requests'}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+              {pendingRequests.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>{r.doctor_name || r.doctor_id}</TableCell>
+                  <TableCell>{r.facility_name || '-'}</TableCell>
+                  <TableCell>{r.requested_at ? new Date(r.requested_at).toLocaleString() : '-'}</TableCell>
+                  <TableCell>{r.reason || '-'}</TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Button size="small" variant="contained" color="success" onClick={() => grantRequest(r.id)}>
+                        {isAmharic ? 'ፍቀድ' : 'APPROVE'}
+                      </Button>
+                      <Button size="small" variant="outlined" color="error" onClick={() => denyRequest(r.id)}>
+                        {isAmharic ? 'ከልክል' : 'DENY'}
+                      </Button>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -183,29 +240,36 @@ export const ConsentManagementPage: React.FC = () => {
                   ? 'ለማጋራት የሚፈልጉትን መረጃ ይምረጡ'
                   : 'Select Data to Share'}
               </Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} flexWrap="wrap">
-                {[
-                  isAmharic ? 'ሙሉ የሕክምና ታሪክ' : 'Full Medical History',
-                  isAmharic ? 'የአሁኑ መድሀኒቶች' : 'Current Medications',
-                  isAmharic ? 'አለርጂዎች' : 'Allergies',
-                  isAmharic ? 'የላብራቶሪ ውጤቶች' : 'Lab Results',
-                  isAmharic ? 'የድንገተኛ መጠናኛ ብቻ' : 'Emergency Contact Only',
-                ].map((label) => (
-                  <FormControlLabel key={label} control={<Checkbox />} label={label} />
-                ))}
-              </Stack>
+              <TextField
+                select
+                fullWidth
+                value={scope}
+                onChange={(e) => setScope(e.target.value as any)}
+                size="small"
+              >
+                <MenuItem value="full_history">{isAmharic ? 'ሙሉ ታሪክ' : 'Full History'}</MenuItem>
+                <MenuItem value="allergies">{isAmharic ? 'አለርጂዎች ብቻ' : 'Allergies Only'}</MenuItem>
+                <MenuItem value="medications">{isAmharic ? 'መድሀኒቶች ብቻ' : 'Medications Only'}</MenuItem>
+                <MenuItem value="lab_results">{isAmharic ? 'የላብ ውጤቶች ብቻ' : 'Lab Results Only'}</MenuItem>
+              </TextField>
             </Box>
 
             <Box>
               <Typography variant="subtitle2" fontWeight={700}>
                 Select Duration / የጊዜ ገደብ ይምረጡ
               </Typography>
-              <RadioGroup defaultValue="30">
-                <FormControlLabel value="24h" control={<Radio />} label="One Visit (24 hours)" />
-                <FormControlLabel value="30" control={<Radio />} label="30 Days" />
-                <FormControlLabel value="90" control={<Radio />} label="90 Days" />
-                <FormControlLabel value="ongoing" control={<Radio />} label="Ongoing (until revoked)" />
-              </RadioGroup>
+              <TextField
+                select
+                fullWidth
+                value={durationDays}
+                onChange={(e) => setDurationDays(Number(e.target.value))}
+                size="small"
+              >
+                <MenuItem value={1}>Single Visit (24 hours)</MenuItem>
+                <MenuItem value={30}>30 Days</MenuItem>
+                <MenuItem value={90}>90 Days</MenuItem>
+                <MenuItem value={365}>Ongoing (until revoked)</MenuItem>
+              </TextField>
             </Box>
 
             <Box>
@@ -215,14 +279,29 @@ export const ConsentManagementPage: React.FC = () => {
               <TextField fullWidth placeholder="(Doctor-provided reason will appear here)" />
             </Box>
 
-            <Box>
-              <Button variant="contained" color="primary">
-                GRANT CONSENT
-              </Button>
-            </Box>
+            <Alert severity="info">
+              {isAmharic
+                ? 'ከላይ ባሉ ጥያቄዎች ላይ APPROVE በመጫን ፈቃድ ይሰጣሉ።'
+                : 'Use APPROVE on each pending request above to grant consent.'}
+            </Alert>
           </Stack>
         </CardContent>
       </Card>
+
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3500}
+        onClose={() => setToast((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={toast.severity}
+          variant="filled"
+          onClose={() => setToast((s) => ({ ...s, open: false }))}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

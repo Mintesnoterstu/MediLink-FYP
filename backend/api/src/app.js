@@ -50,7 +50,9 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/patient', patientRoutes);
 app.use('/api/consents', consentRoutes);
+app.use('/api/patient/consents', consentRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
@@ -59,6 +61,7 @@ app.use('/api/medicines', medicineRoutes);
 app.use('/api/medications', medicineRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/professionals', professionalRoutes);
+app.use('/api/professional', professionalRoutes);
 app.use('/api/vital-signs', vitalSignsRoutes);
 
 app.use(notFoundHandler);
