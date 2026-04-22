@@ -23,6 +23,7 @@ import { MedicationManager } from '@/components/features/patient/MedicationManag
 import { AppointmentScheduler } from '@/components/features/patient/AppointmentScheduler/AppointmentScheduler';
 import { PatientDashboard } from '@/features/patient/dashboard/PatientDashboard';
 import { ProfessionalDashboard } from '@/features/professional/dashboard/ProfessionalDashboard';
+import { PatientDashboardView } from '@/components/professional/PatientDashboardView';
 import { AdminDashboard } from '@/features/admin/dashboard/AdminDashboard';
 import { ChatBot } from '@/components/ChatBot';
 import '@/i18n/config';
@@ -178,6 +179,18 @@ function App() {
                         <AppLayout>
                           <PageContainer>
                             <AppointmentScheduler />
+                          </PageContainer>
+                        </AppLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/professional/patient/:patientId/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout useSidebar>
+                          <PageContainer>
+                            <PatientDashboardView />
                           </PageContainer>
                         </AppLayout>
                       </ProtectedRoute>

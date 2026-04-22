@@ -1,6 +1,6 @@
 import { Disease } from '@/types';
 
-export const mockDiseases: Disease[] = [
+const ALL_DISEASES: Disease[] = [
   // SILENT DISEASES (3)
   {
     id: 'hyp1',
@@ -932,3 +932,121 @@ export const mockDiseases: Disease[] = [
     videoUrl: undefined,
   },
 ];
+
+const ALLOWED_DISEASE_NAMES = new Set<string>([
+  'Hypertension',
+  'Type 2 Diabetes',
+  'Osteoporosis',
+  'Chronic Kidney Disease',
+  'Hepatitis B and C',
+  'High Cholesterol',
+  'Sleep Apnea',
+  'Glaucoma',
+  'Hypothyroidism',
+  'Fatty Liver Disease',
+  'Malaria',
+  'Asthma',
+  'Epilepsy',
+  'Rheumatoid Arthritis',
+  'Heart Failure',
+  'COPD',
+  'Sickle Cell Disease',
+  'HIV/AIDS',
+  'Tuberculosis',
+  'Typhoid Fever',
+  'Type 1 Diabetes',
+  'Lupus',
+  'Multiple Sclerosis',
+  'Psoriasis',
+  "Hashimoto's Disease",
+  "Graves' Disease",
+  'Celiac Disease',
+  "Sjögren's Syndrome",
+  'Inflammatory Bowel Disease',
+  "Addison's Disease",
+]);
+
+const CATEGORY_BY_NAME: Record<string, Disease['category']> = {
+  Hypertension: 'silent',
+  'Type 2 Diabetes': 'silent',
+  Osteoporosis: 'silent',
+  'Chronic Kidney Disease': 'silent',
+  'Hepatitis B and C': 'silent',
+  'High Cholesterol': 'silent',
+  'Sleep Apnea': 'silent',
+  Glaucoma: 'silent',
+  Hypothyroidism: 'silent',
+  'Fatty Liver Disease': 'silent',
+
+  Malaria: 'chronic',
+  Asthma: 'chronic',
+  Epilepsy: 'chronic',
+  'Rheumatoid Arthritis': 'chronic',
+  'Heart Failure': 'chronic',
+  COPD: 'chronic',
+  'Sickle Cell Disease': 'chronic',
+  'HIV/AIDS': 'chronic',
+  Tuberculosis: 'chronic',
+  'Typhoid Fever': 'chronic',
+
+  'Type 1 Diabetes': 'autoimmune',
+  Lupus: 'autoimmune',
+  'Multiple Sclerosis': 'autoimmune',
+  Psoriasis: 'autoimmune',
+  "Hashimoto's Disease": 'autoimmune',
+  "Graves' Disease": 'autoimmune',
+  'Celiac Disease': 'autoimmune',
+  "Sjögren's Syndrome": 'autoimmune',
+  'Inflammatory Bowel Disease': 'autoimmune',
+  "Addison's Disease": 'autoimmune',
+};
+
+const AMHARIC_NAME_BY_ENGLISH: Record<string, string> = {
+  'Inflammatory Bowel Disease': 'ኢንፍላማቶሪ ቦዌል ዲዝዝ',
+  "Sjögren's Syndrome": 'ሾግረን ሲንድሮም',
+};
+
+const VIDEO_URL_BY_NAME: Record<string, string | undefined> = {
+  Hypertension: 'https://www.youtube.com/embed/c4w3igzxduM',
+  'Type 2 Diabetes': 'https://www.youtube.com/embed/YlIO_XSAkFk',
+  Osteoporosis: 'https://www.youtube.com/embed/rF1l-QK1VIs',
+  'Chronic Kidney Disease': 'https://www.youtube.com/embed/P3boyT6vMv8',
+  'Hepatitis B and C': 'https://www.youtube.com/embed/yoXskKSlnrU',
+  'High Cholesterol': 'https://www.youtube.com/embed/Y_pidfsyYrw',
+  'Sleep Apnea': 'https://www.youtube.com/embed/8OHYqBDDEZM',
+  Glaucoma: 'https://www.youtube.com/embed/TqPAPwF6e0g',
+  Hypothyroidism: 'https://www.youtube.com/embed/c4w3igzxduM',
+  'Fatty Liver Disease': 'https://www.youtube.com/embed/pET6YRkC1LE',
+
+  Malaria: 'https://www.youtube.com/embed/5u6SeLdO2C8',
+  Asthma: 'https://www.youtube.com/embed/9_Rlp-fNOYU',
+  Epilepsy: 'https://www.youtube.com/embed/-21FcLn5Ju0',
+  'Rheumatoid Arthritis': 'https://www.youtube.com/embed/FB_FbpkUsGA',
+  'Heart Failure': 'https://www.youtube.com/embed/7bfIcfa6PHw',
+  COPD: 'https://www.youtube.com/embed/_TgKuvMELjY',
+  'Sickle Cell Disease': 'https://www.youtube.com/embed/8RjB3KC8EUU',
+  'HIV/AIDS': 'https://www.youtube.com/embed/CGKrMipFDPc',
+  Tuberculosis: 'https://www.youtube.com/embed/tr-PZ_fsg6c',
+  'Typhoid Fever': 'https://www.youtube.com/embed/Fywpx6y9_SQ',
+
+  'Type 1 Diabetes': 'https://www.youtube.com/embed/5fTs-rfoRH4',
+  Lupus: 'https://www.youtube.com/embed/LI-jJZP2m3o',
+  'Multiple Sclerosis': 'https://www.youtube.com/embed/-noqnffdnTU',
+  Psoriasis: 'https://www.youtube.com/embed/HCzXYlYJwQo',
+  "Hashimoto's Disease": 'https://www.youtube.com/embed/ehG9RMgIFkE',
+  "Graves' Disease": 'https://www.youtube.com/embed/ypFnykab9ZQ',
+  'Celiac Disease': 'https://www.youtube.com/embed/oOPc5rnY9Qc',
+  "Sjögren's Syndrome": undefined,
+  'Inflammatory Bowel Disease': 'https://www.youtube.com/embed/PisLMsZOzaE',
+  "Addison's Disease": undefined,
+};
+
+// Export ONLY the requested 30 diseases (removes all others from the UI)
+export const mockDiseases: Disease[] = ALL_DISEASES
+  .filter((d) => ALLOWED_DISEASE_NAMES.has(d.name))
+  .map((d) => ({
+    ...d,
+    category: CATEGORY_BY_NAME[d.name] || d.category,
+    nameAmharic: AMHARIC_NAME_BY_ENGLISH[d.name] || d.nameAmharic,
+    videoUrl: VIDEO_URL_BY_NAME[d.name],
+  }));

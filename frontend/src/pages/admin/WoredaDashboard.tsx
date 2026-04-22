@@ -1,5 +1,26 @@
 import React from 'react';
-import { Alert, Box, Card, CardContent, Snackbar, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { Home, BarChart, Settings, Logout as LogoutIcon, LocalHospital, Groups } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { CreateFacilityAdminForm, CreateFacilityAdminPayload } from '@/components/admin/CreateFacilityAdminForm';
 import { RegisterFacilityForm, RegisterFacilityPayload } from '@/components/admin/RegisterFacilityForm';
@@ -7,14 +28,19 @@ import { FacilityAdminsList } from '@/components/admin/FacilityAdminsList';
 import { FacilitiesList } from '@/components/admin/FacilitiesList';
 import { StatisticsCards } from '@/components/admin/StatisticsCards';
 import { woredaAdminService } from '@/features/admin/services/woredaAdminService';
+import { useNavigate } from 'react-router-dom';
 
 export const WoredaDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = React.useState(false);
   const [stats, setStats] = React.useState({ totalFacilities: 0, totalProfessionals: 0, totalPatients: 0 });
   const [facilityAdmins, setFacilityAdmins] = React.useState<any[]>([]);
   const [facilities, setFacilities] = React.useState<any[]>([]);
   const [audit, setAudit] = React.useState<any[]>([]);
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [active, setActive] = React.useState<'dashboard' | 'facility' | 'statistics' | 'audit' | 'settings'>('dashboard');
+  const [confirmLogout, setConfirmLogout] = React.useState(false);
   const [toast, setToast] = React.useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -67,38 +93,158 @@ export const WoredaDashboard: React.FC = () => {
   };
 
   return (
-    <Box sx={{ px: { xs: 1, md: 2 }, pb: 4 }}>
-      <Typography variant="h5" fontWeight={800} sx={{ mb: 0.5 }}>Woreda Admin Dashboard</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {user?.name} (Woreda Admin)
-      </Typography>
+    <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
+      {/* Header (same pattern as Professional Dashboard) */}
+      <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <Box display="flex" alignItems="center" gap={1.25}>
+          <IconButton onClick={() => setDrawerOpen(true)} size="small" aria-label="open menu">
+            <Home />
+          </IconButton>
+          <Box>
+            <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }, lineHeight: 1.2 }}>
+              WOREDA ADMIN DASHBOARD
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              <strong>{user?.name}</strong> · Role: Woreda Admin
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
 
       <Alert severity="info" sx={{ mb: 2 }}>
         Woreda admins can only view anonymous statistics. No patient-level data is shown.
       </Alert>
 
-      <StatisticsCards stats={stats} />
+      {(active === 'dashboard' || active === 'statistics') && (
+        <StatisticsCards stats={stats} />
+      )}
 
-      <Stack spacing={3} sx={{ mt: 3 }}>
-        <Card><CardContent><Typography variant="h6" gutterBottom>Create Facility Admin</Typography><CreateFacilityAdminForm loading={loading} onSubmit={onCreateAdmin} /></CardContent></Card>
-        <Card><CardContent><Typography variant="h6" gutterBottom>Register Facility</Typography><RegisterFacilityForm loading={loading} onSubmit={onRegisterFacility} /></CardContent></Card>
-        <Card><CardContent><Typography variant="h6" gutterBottom>Facility Admins</Typography><FacilityAdminsList rows={facilityAdmins} /></CardContent></Card>
-        <Card><CardContent><Typography variant="h6" gutterBottom>Facilities</Typography><FacilitiesList rows={facilities} /></CardContent></Card>
-        <Card>
+      {(active === 'dashboard' || active === 'facility') && (
+        <Stack spacing={3} sx={{ mt: 3 }}>
+          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Create Facility Admin</Typography>
+              <CreateFacilityAdminForm loading={loading} onSubmit={onCreateAdmin} />
+            </CardContent>
+          </Card>
+          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Register Facility</Typography>
+              <RegisterFacilityForm loading={loading} onSubmit={onRegisterFacility} />
+            </CardContent>
+          </Card>
+          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Facility Admins</Typography>
+              <FacilityAdminsList rows={facilityAdmins} />
+            </CardContent>
+          </Card>
+          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight={900} gutterBottom>Facilities</Typography>
+              <FacilitiesList rows={facilities} />
+            </CardContent>
+          </Card>
+        </Stack>
+      )}
+
+      {(active === 'dashboard' || active === 'audit') && (
+        <Card sx={{ mt: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>Recent Activity</Typography>
-            {audit.slice(0, 5).map((item) => (
+            <Typography variant="subtitle1" fontWeight={900} gutterBottom>Audit Logs</Typography>
+            {audit.slice(0, 10).map((item) => (
               <Typography key={`${item.ts}-${item.action}`} variant="body2" sx={{ mb: 1 }}>
                 {new Date(item.ts).toLocaleString()} - {item.action}
               </Typography>
             ))}
           </CardContent>
         </Card>
-      </Stack>
+      )}
+
+      {active === 'settings' && (
+        <Card sx={{ mt: 3, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={900} gutterBottom>Settings</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Settings UI can be added here (frontend-only).
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
 
       <Snackbar open={toast.open} autoHideDuration={3500} onClose={() => setToast((s) => ({ ...s, open: false }))}>
         <Alert severity={toast.severity} variant="filled">{toast.message}</Alert>
       </Snackbar>
+
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 280 },
+            bgcolor: '#2C3E50',
+            color: 'white',
+          },
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Typography variant="subtitle1" fontWeight={800}>
+            {user?.name || 'Woreda Admin'}
+          </Typography>
+          <Typography variant="caption" sx={{ opacity: 0.8 }}>
+            Role: Woreda Admin
+          </Typography>
+        </Box>
+        <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
+        <List>
+          <ListItemButton onClick={() => { setActive('dashboard'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Home /></ListItemIcon>
+            <ListItemText primary="Dashboard" />
+          </ListItemButton>
+          <ListItemButton onClick={() => { setActive('facility'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><LocalHospital /></ListItemIcon>
+            <ListItemText primary="Facility Management" />
+          </ListItemButton>
+          <ListItemButton onClick={() => { setActive('statistics'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><BarChart /></ListItemIcon>
+            <ListItemText primary="Statistics" />
+          </ListItemButton>
+          <ListItemButton onClick={() => { setActive('audit'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Groups /></ListItemIcon>
+            <ListItemText primary="Audit Logs" />
+          </ListItemButton>
+          <ListItemButton onClick={() => { setActive('settings'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Settings /></ListItemIcon>
+            <ListItemText primary="Settings" />
+          </ListItemButton>
+          <ListItemButton onClick={() => { setDrawerOpen(false); setConfirmLogout(true); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
+            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><LogoutIcon /></ListItemIcon>
+            <ListItemText primary="Logout" />
+          </ListItemButton>
+        </List>
+      </Drawer>
+
+      <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)}>
+        <DialogTitle>Confirm Logout</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">Are you sure you want to log out?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmLogout(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setConfirmLogout(false);
+              logout();
+              navigate('/');
+            }}
+          >
+            Logout
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

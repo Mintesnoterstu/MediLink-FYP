@@ -25,6 +25,7 @@ const filesInOrder = [
   '012_woreda_city_admin_support.up.sql',
   '013_facility_admin_support.up.sql',
   '014_consent_flow_support.up.sql',
+  '015_allow_nurse_rls.up.sql',
 ];
 
 const databaseUrl = process.env.DATABASE_URL;

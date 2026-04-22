@@ -329,6 +329,7 @@ export async function sendConsentGrantedEmailToProfessional({
   patientName,
   scope,
   expiresAt,
+  dashboardLink,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
   await assertEmailReady();
@@ -342,6 +343,7 @@ Access Scope: ${scope}
 Expires: ${expiresAt}
 
 You can now view their records from your dashboard.
+${dashboardLink ? `Direct Link: ${dashboardLink}` : ''}
 
 Thank you,
 MediLink Team`;
@@ -379,6 +381,7 @@ export async function sendChangeApprovedEmailToProfessional({
   toEmail,
   doctorName,
   patientName,
+  dashboardLink,
 }) {
   if (!toEmail) return { transport: 'none', messageId: null };
   await assertEmailReady();
@@ -389,6 +392,7 @@ export async function sendChangeApprovedEmailToProfessional({
 ${patientName} has approved the changes you made to their medical record.
 
 Your access has been restored.
+${dashboardLink ? `\nDirect Link: ${dashboardLink}` : ''}
 
 Thank you,
 MediLink Team`;

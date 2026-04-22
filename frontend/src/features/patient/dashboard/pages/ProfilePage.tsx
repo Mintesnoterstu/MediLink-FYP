@@ -18,10 +18,35 @@ import {
 } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { useUI } from '@/contexts/UIContext';
+import { apiClient } from '@/services/apiClient';
 
 export const ProfilePage: React.FC = () => {
   const { language, theme, toggleTheme } = useUI();
   const isAmharic = language === 'am';
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [message, setMessage] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const changePassword = async () => {
+    try {
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        setMessage({ type: 'error', text: 'Please fill all password fields.' });
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setMessage({ type: 'error', text: 'New passwords do not match.' });
+        return;
+      }
+      await apiClient.put('/patient/change-password', { currentPassword, newPassword });
+      setMessage({ type: 'success', text: 'Password changed successfully.' });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (e: any) {
+      setMessage({ type: 'error', text: e?.response?.data?.error || 'Failed to change password.' });
+    }
+  };
 
   return (
     <Box>
@@ -54,78 +79,13 @@ export const ProfilePage: React.FC = () => {
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2 }}>
         <CardContent>
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-            {isAmharic ? 'የግል መረጃ (የተረጋገጠ)' : 'Personal Information (Verified)'}
+            {isAmharic ? 'የግል መረጃ (ለእይታ ብቻ)' : 'Personal Information (View only)'}
           </Typography>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>{isAmharic ? 'መስክ' : 'Field'}</TableCell>
-                <TableCell>{isAmharic ? 'አሁን ያለው ዋጋ' : 'Current Value'}</TableCell>
-                <TableCell>{isAmharic ? 'የተረጋገጠው በ' : 'Verified By'}</TableCell>
-                <TableCell>{isAmharic ? 'እርምጃ' : 'Action'}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {[
-                {
-                  enField: 'Full Name',
-                  amField: 'ሙሉ ስም',
-                  value: 'Almaz Kebede',
-                  verifiedEn: 'Jimma Hospital',
-                  verifiedAm: 'ጅማ ሆስፒታል',
-                  actionEn: 'Request Change',
-                  actionAm: 'ለውጥ ጠይቅ',
-                },
-                {
-                  enField: 'Date of Birth',
-                  amField: 'የትውልድ ቀን',
-                  value: '15/04/1990',
-                  verifiedEn: 'Jimma Hospital',
-                  verifiedAm: 'ጅማ ሆስፒታል',
-                  actionEn: 'Request Change',
-                  actionAm: 'ለውጥ ጠይቅ',
-                },
-                {
-                  enField: 'Phone Number',
-                  amField: 'የስልክ ቁጥር',
-                  value: '0911-234-567',
-                  verifiedEn: 'Self (SMS verified)',
-                  verifiedAm: 'በራስ (ኤስኤምኤስ የተረጋገጠ)',
-                  actionEn: 'Update',
-                  actionAm: 'አዘምን',
-                },
-                {
-                  enField: 'Email',
-                  amField: 'ኢሜይል',
-                  value: 'almaz@email.com',
-                  verifiedEn: 'Self (Email verified)',
-                  verifiedAm: 'በራስ (ኢሜይል የተረጋገጠ)',
-                  actionEn: 'Update',
-                  actionAm: 'አዘምን',
-                },
-                {
-                  enField: 'Address',
-                  amField: 'አድራሻ',
-                  value: 'Jimma, Kebele 01',
-                  verifiedEn: 'Jimma Hospital',
-                  verifiedAm: 'ጅማ ሆስፒታል',
-                  actionEn: 'Request Change',
-                  actionAm: 'ለውጥ ጠይቅ',
-                },
-              ].map((r) => (
-                <TableRow key={r.enField}>
-                  <TableCell>{isAmharic ? r.amField : r.enField}</TableCell>
-                  <TableCell>{r.value}</TableCell>
-                  <TableCell>{isAmharic ? r.verifiedAm : r.verifiedEn}</TableCell>
-                  <TableCell>
-                    <Button size="small">
-                      {isAmharic ? r.actionAm : r.actionEn}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Typography variant="body2" color="text.secondary">
+            {isAmharic
+              ? 'ታካሚዎች የግል መረጃቸውን በቀጥታ ማስተካከል አይችሉም። ማስተካከያ ለመጠየቅ ከፋሲሊቲ አድሚን ጋር ያነጋግሩ።'
+              : 'Patients cannot edit personal information directly. Contact your facility admin to request corrections.'}
+          </Typography>
         </CardContent>
       </Card>
 
@@ -183,64 +143,38 @@ export const ProfilePage: React.FC = () => {
       <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2 }}>
         <CardContent>
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-            {isAmharic ? 'የደህንነት ቅንብሮች' : 'Security Settings'}
+            {isAmharic ? 'የይለፍ ቃል ለውጥ' : 'Change Password'}
           </Typography>
           <Stack spacing={1}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2">
-                {isAmharic
-                  ? 'የይለፍ ቃል — ለመጨረሻ ጊዜ የተቀየረ፡ ጃንዋሪ 10፣ 2026'
-                  : 'Password — Last changed: Jan 10, 2026'}
+            {message ? (
+              <Typography color={message.type === 'error' ? 'error.main' : 'success.main'} variant="body2">
+                {message.text}
               </Typography>
-              <Button size="small">
-                {isAmharic ? 'የይለፍ ቃል ቀይር' : 'Change Password'}
-              </Button>
-            </Box>
-            <Divider />
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2">
-                {isAmharic
-                  ? 'ሁለት-ደረጃ ማረጋገጫ — ነቅቷል (ኤስኤምኤስ ኦቲፒ)'
-                  : 'Two-Factor Authentication — ENABLED (SMS OTP)'}
-              </Typography>
-              <Stack direction="row" spacing={1}>
-                <Button size="small" variant="outlined">
-                  {isAmharic ? 'አጥፋ' : 'Disable'}
-                </Button>
-                <Button size="small">
-                  {isAmharic ? 'አዋቅር' : 'Configure'}
-                </Button>
-              </Stack>
-            </Box>
-            <Divider />
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2">
-                {isAmharic ? 'የታመኑ መሣሪያዎች — 2 መሣሪያዎች' : 'Trusted Devices — 2 devices'}
-              </Typography>
-              <Button size="small">
-                {isAmharic ? 'አስተዳድር' : 'Manage'}
-              </Button>
-            </Box>
-            <Divider />
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2">
-                {isAmharic
-                  ? 'የመግቢያ ታሪክ — የመጨረሻ መግቢያ፡ ዛሬ ከጠዋቱ 9፡15'
-                  : 'Login History — Last login: Today 9:15 AM'}
-              </Typography>
-              <Button size="small">
-                {isAmharic ? 'ሙሉ ታሪክ ይመልከቱ' : 'View Full History'}
-              </Button>
-            </Box>
-            <Divider />
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="body2">
-                {isAmharic ? 'ከሁሉም መሣሪያዎች ውጣ' : 'Logout from all devices'}
-              </Typography>
-              <Button size="small" color="error" variant="outlined">
-                {isAmharic ? 'አረጋግጥ' : 'Confirm'}
-              </Button>
-            </Box>
+            ) : null}
+            <input
+              type="password"
+              placeholder={isAmharic ? 'የአሁኑ የይለፍ ቃል' : 'Current password'}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              style={{ padding: 10, borderRadius: 8, border: '1px solid #ccc' }}
+            />
+            <input
+              type="password"
+              placeholder={isAmharic ? 'አዲስ የይለፍ ቃል' : 'New password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              style={{ padding: 10, borderRadius: 8, border: '1px solid #ccc' }}
+            />
+            <input
+              type="password"
+              placeholder={isAmharic ? 'አዲስ የይለፍ ቃል ያረጋግጡ' : 'Confirm new password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              style={{ padding: 10, borderRadius: 8, border: '1px solid #ccc' }}
+            />
+            <Button variant="contained" onClick={changePassword}>
+              {isAmharic ? 'የይለፍ ቃል ቀይር' : 'Change Password'}
+            </Button>
           </Stack>
         </CardContent>
       </Card>
@@ -277,21 +211,11 @@ export const ProfilePage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent>
-          <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
-            {isAmharic ? 'የውሂብ እርምጃዎች' : 'Data Actions'}
-          </Typography>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
-            <Button variant="outlined">
-              {isAmharic ? 'የእኔን ውሂብ አውርድ' : 'DOWNLOAD MY DATA'}
-            </Button>
-            <Button variant="outlined" color="error">
-              {isAmharic ? 'መለያ መሰረዝ ጠይቅ' : 'REQUEST ACCOUNT DELETION'}
-            </Button>
-          </Stack>
-        </CardContent>
-      </Card>
+      <Typography variant="body2" color="text.secondary">
+        {isAmharic
+          ? 'ማሳሰቢያ: ታካሚዎች የግል ወይም የሕክምና መረጃን ማስተካከል አይችሉም።'
+          : 'Note: patients cannot edit personal or medical information.'}
+      </Typography>
     </Box>
   );
 };

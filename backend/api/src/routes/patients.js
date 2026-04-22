@@ -256,6 +256,43 @@ router.get('/profile', authRequired, requireRole('patient'), async (req, res, ne
   }
 });
 
+router.get('/records', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const rows = await query(
+      `
+      SELECT hr.id, hr.record_type, hr.record_date, hr.created_at, hr.status, hr.encrypted_data,
+             u.full_name AS created_by_name
+      FROM health_records hr
+      JOIN users u ON u.id = hr.created_by
+      WHERE hr.patient_id IN (SELECT id FROM patients WHERE user_id = $1)
+      ORDER BY hr.created_at DESC
+      LIMIT 300
+    `,
+      [req.user.id],
+    );
+    const out = rows.rows.map((r) => {
+      let decrypted = null;
+      try {
+        decrypted = decryptJson(r.encrypted_data);
+      } catch {
+        decrypted = null;
+      }
+      return {
+        id: r.id,
+        record_type: r.record_type,
+        record_date: r.record_date,
+        created_at: r.created_at,
+        status: r.status,
+        created_by_name: r.created_by_name,
+        data: decrypted,
+      };
+    });
+    return res.json(out);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 const changePasswordSchema = Joi.object({
   currentPassword: Joi.string().min(6).required(),
   newPassword: Joi.string().min(6).required(),

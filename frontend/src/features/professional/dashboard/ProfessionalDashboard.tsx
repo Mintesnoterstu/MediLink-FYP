@@ -53,10 +53,19 @@ export const ProfessionalDashboard: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
   const [isSavingSettings, setIsSavingSettings] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [searchResults, setSearchResults] = React.useState<ProfessionalPatientSearchResult[]>([]);
-  const [isSearching, setIsSearching] = React.useState(false);
+  const [healthId, setHealthId] = React.useState('');
+  const [patientLookup, setPatientLookup] = React.useState<ProfessionalPatientSearchResult | null>(null);
+  const [isLookingUp, setIsLookingUp] = React.useState(false);
+  const [myPatients, setMyPatients] = React.useState<any[]>([]);
   const [pendingRequests, setPendingRequests] = React.useState<any[]>([]);
+  const [patientViewOpen, setPatientViewOpen] = React.useState(false);
+  const [selectedPatient, setSelectedPatient] = React.useState<any | null>(null);
+  const [patientViewData, setPatientViewData] = React.useState<any | null>(null);
+  const [isLoadingPatientView] = React.useState(false);
+  const [recordType, setRecordType] = React.useState('diagnosis');
+  const [recordPayload, setRecordPayload] = React.useState('');
+  const [recordDate, setRecordDate] = React.useState('');
+  const [updateRecordId, setUpdateRecordId] = React.useState('');
   const [toast, setToast] = React.useState<{ open: boolean; severity: 'success' | 'error' | 'info'; message: string }>(
     { open: false, severity: 'info', message: '' },
   );
@@ -104,26 +113,39 @@ export const ProfessionalDashboard: React.FC = () => {
   };
 
   const runSearch = async () => {
-    if (!searchTerm.trim()) return;
+    const q = String(healthId || '').trim().toUpperCase();
+    if (!q) return;
     try {
-      setIsSearching(true);
-      const results = await professionalDataService.searchPatients(searchTerm.trim());
-      setSearchResults(results || []);
-    } catch (e) {
-      setToast({ open: true, severity: 'error', message: e instanceof Error ? e.message : 'Search failed' });
+      setIsLookingUp(true);
+      const results = await professionalDataService.searchPatients(q);
+      setPatientLookup((results && results[0]) || null);
+      if (!results || results.length === 0) {
+        setToast({ open: true, severity: 'info', message: 'No patient found for this Ethiopian Health ID.' });
+      }
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || (e instanceof Error ? e.message : 'Search failed');
+      setToast({ open: true, severity: 'error', message: msg });
     } finally {
-      setIsSearching(false);
+      setIsLookingUp(false);
     }
   };
 
-  const requestConsent = async (patientId: string) => {
+  const requestConsent = async () => {
     try {
-      await professionalDataService.requestConsent(patientId, 'Request access for care');
-      setToast({ open: true, severity: 'success', message: 'Consent request sent.' });
-      const p = await professionalDataService.getPendingConsentRequests();
+      const q = String(healthId || patientLookup?.ethiopian_health_id || '').trim().toUpperCase();
+      if (!q) return;
+      await professionalDataService.requestConsentByHealthId(q, 'Follow-up treatment');
+      setToast({ open: true, severity: 'success', message: 'Request sent. Waiting for patient approval.' });
+      const [p, mine] = await Promise.all([
+        professionalDataService.getPendingConsentRequests(),
+        professionalDataService.getMyPatients(),
+      ]);
       setPendingRequests(Array.isArray(p) ? p : []);
-    } catch (e) {
-      setToast({ open: true, severity: 'error', message: e instanceof Error ? e.message : 'Request failed' });
+      setMyPatients(Array.isArray(mine) ? mine : []);
+    } catch (e: any) {
+      const details = Array.isArray(e?.response?.data?.details) ? e.response.data.details.join(' | ') : '';
+      const msg = details || e?.response?.data?.error || (e instanceof Error ? e.message : 'Request failed');
+      setToast({ open: true, severity: 'error', message: msg });
     }
   };
 
@@ -137,13 +159,100 @@ export const ProfessionalDashboard: React.FC = () => {
     }
   };
 
+  const openPatientView = async (patient: any) => {
+    if (!patient?.id) return;
+    navigate(`/professional/patient/${patient.id}/dashboard`);
+  };
+
+  const quickViewById = (id: string) => {
+    if (!id) return;
+    navigate(`/professional/patient/${id}/dashboard`);
+  };
+
+  const createRecord = async () => {
+    try {
+      if (!selectedPatient?.id) return;
+      const payload = recordPayload.trim() ? JSON.parse(recordPayload) : {};
+      await professionalDataService.createHealthRecord({
+        patientId: selectedPatient.id,
+        recordType,
+        recordDate: recordDate || undefined,
+        encryptedData: payload,
+      });
+      setToast({
+        open: true,
+        severity: 'success',
+        message: 'Record saved. Consent auto-revoked until patient approves.',
+      });
+      setRecordPayload('');
+      setRecordDate('');
+      setPatientViewOpen(false);
+      setPatientViewData(null);
+      setSelectedPatient(null);
+      const mine = await professionalDataService.getMyPatients();
+      setMyPatients(Array.isArray(mine) ? mine : []);
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || e?.message || 'Failed to save record';
+      setToast({ open: true, severity: 'error', message: msg });
+    }
+  };
+
+  const updateRecord = async () => {
+    try {
+      if (!updateRecordId.trim()) {
+        setToast({ open: true, severity: 'error', message: 'Record ID is required for update.' });
+        return;
+      }
+      const payload = recordPayload.trim() ? JSON.parse(recordPayload) : {};
+      await professionalDataService.updateHealthRecord(updateRecordId.trim(), payload);
+      setToast({
+        open: true,
+        severity: 'success',
+        message: 'Record updated. Consent auto-revoked until patient approves.',
+      });
+      setRecordPayload('');
+      setUpdateRecordId('');
+      setPatientViewOpen(false);
+      setPatientViewData(null);
+      setSelectedPatient(null);
+      const mine = await professionalDataService.getMyPatients();
+      setMyPatients(Array.isArray(mine) ? mine : []);
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || e?.message || 'Failed to update record';
+      setToast({ open: true, severity: 'error', message: msg });
+    }
+  };
+
   React.useEffect(() => {
-    if (tab !== 2) return;
-    professionalDataService
-      .getPendingConsentRequests()
-      .then((p) => setPendingRequests(Array.isArray(p) ? p : []))
-      .catch(() => setPendingRequests([]));
+    if (tab === 0) {
+      professionalDataService
+        .getMyPatients()
+        .then((r) => setMyPatients(Array.isArray(r) ? r : []))
+        .catch(() => setMyPatients([]));
+
+      const interval = window.setInterval(() => {
+        professionalDataService
+          .getMyPatients()
+          .then((r) => setMyPatients(Array.isArray(r) ? r : []))
+          .catch(() => null);
+      }, 10000);
+      return () => window.clearInterval(interval);
+    }
+    if (tab === 2) {
+      professionalDataService
+        .getPendingConsentRequests()
+        .then((p) => setPendingRequests(Array.isArray(p) ? p : []))
+        .catch(() => setPendingRequests([]));
+    }
+    return undefined;
   }, [tab]);
+
+  React.useEffect(() => {
+    const q = new URLSearchParams(location.search);
+    const patientId = q.get('patientId');
+    if (!patientId) return;
+    quickViewById(patientId);
+  }, [location.search]);
 
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
@@ -203,177 +312,107 @@ export const ProfessionalDashboard: React.FC = () => {
                 : "TODAY'S PATIENTS (with active consent)"}
             </Typography>
           </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent>
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                  {isAmharic
-                    ? 'ታካሚ፡ አልማዝ ከበደ (ETH-2026-0315-AB123)'
-                    : 'Patient: Almaz Kebede (ETH-2026-0315-AB123)'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic ? 'ዕድሜ፡ 35 | ጾታ፡ ሴት' : 'Age: 35 | Gender: Female'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic
-                    ? 'ፈቃድ፡ ✅ ንቁ - ሙሉ ታሪክ'
-                    : 'Consent: ✅ ACTIVE - Full History'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic
-                    ? 'የተሰጠበት፡ 2026-03-16 | የሚያበቃበት፡ 2026-04-16'
-                    : 'Granted: 2026-03-16 | Expires: 2026-04-16'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic
-                    ? 'የመጨረሻ ጉብኝት፡ 2026-03-10'
-                    : 'Last Visit: 2026-03-10'}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 2 }}>
-                  {isAmharic
-                    ? 'ምክንያት፡ ተከታታይ ሕክምና'
-                    : 'Reason: Follow-up treatment'}
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  <Button variant="contained" size="small">
-                    {isAmharic ? 'ዳሽቦርድ ተመልከት' : 'VIEW DASHBOARD'}
-                  </Button>
-                  <Button variant="outlined" size="small">
-                    {isAmharic ? 'ማስታወሻ ጨምር' : 'ADD NOTE'}
-                  </Button>
-                  <Button variant="outlined" size="small">
-                    {isAmharic ? 'ላብራቶሪ አዘዝ' : 'ORDER LAB'}
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-              <CardContent>
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                  {isAmharic
-                    ? 'ታካሚ፡ ተክሌ ኃይሉ (ETH-2026-0315-CD456)'
-                    : 'Patient: Tekle Hailu (ETH-2026-0315-CD456)'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic ? 'ዕድሜ፡ 40 | ጾታ፡ ወንድ' : 'Age: 40 | Gender: Male'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic
-                    ? 'ፈቃድ፡ ✅ ንቁ - አለርጂዎች ብቻ'
-                    : 'Consent: ✅ ACTIVE - Allergies Only'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic
-                    ? 'የተሰጠበት፡ 2026-03-15 | የሚያበቃበት፡ 2026-04-15'
-                    : 'Granted: 2026-03-15 | Expires: 2026-04-15'}
-                </Typography>
-                <Typography variant="body2">
-                  {isAmharic
-                    ? 'የመጨረሻ ጉብኝት፡ 2026-03-15'
-                    : 'Last Visit: 2026-03-15'}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 2 }}>
-                  {isAmharic
-                    ? 'ምክንያት፡ የአለርጂ ምልክቶች'
-                    : 'Reason: Allergy symptoms'}
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  <Button variant="contained" size="small">
-                    {isAmharic ? 'ዳሽቦርድ ተመልከት' : 'VIEW DASHBOARD'}
-                  </Button>
-                  <Button variant="outlined" size="small">
-                    {isAmharic ? 'ማስታወሻ ጨምር' : 'ADD NOTE'}
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Tab 2: Search Patient */}
-      {tab === 1 && (
-        <Box>
-          <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
-            {isAmharic ? 'ታካሚ ፈልግ' : 'SEARCH PATIENT'}
-          </Typography>
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                select
-                defaultValue="id"
-                label={isAmharic ? 'በፍለጋ' : 'Search by'}
-                SelectProps={{ native: true }}
-              >
-                <option value="name">{isAmharic ? 'ስም' : 'Name'}</option>
-                <option value="id">
-                  {isAmharic
-                    ? 'የኢትዮጵያ የጤና መታወቂያ'
-                    : 'Ethiopian Health ID'}
-                </option>
-                <option value="phone">
-                  {isAmharic ? 'ስልክ' : 'Phone'}
-                </option>
-              </TextField>
+          {myPatients.length === 0 ? (
+            <Grid item xs={12}>
+              <Alert severity="info">No patients yet.</Alert>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label={isAmharic ? 'የፍለጋ ቃል' : 'Search Term'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Button
-                fullWidth
-                variant="contained"
-                sx={{ height: '100%' }}
-                disabled={isSearching}
-                onClick={runSearch}
-              >
-                {isAmharic ? 'ፈልግ' : 'SEARCH'}
-              </Button>
-            </Grid>
-          </Grid>
-
-          <Grid container spacing={2}>
-            {searchResults.map((p) => (
+          ) : (
+            myPatients.map((p) => (
               <Grid item xs={12} md={6} key={p.id}>
                 <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
                   <CardContent>
                     <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                      {p.full_name} | {p.ethiopian_health_id}
+                      <Button variant="text" size="small" onClick={() => openPatientView(p)} sx={{ p: 0, minWidth: 0 }}>
+                        {p.full_name}
+                      </Button>{' '}
+                      ({p.ethiopian_health_id})
                     </Typography>
                     <Typography variant="body2" sx={{ mb: 1 }}>
-                      {isAmharic ? 'የፈቃድ ሁኔታ፡ ' : 'Consent Status: '}
-                      {p.has_active_consent ? '✅ ACTIVE' : '❌ NO ACTIVE CONSENT'}
+                      Consent: ✅ ACTIVE
                     </Typography>
-                    <Stack direction="row" spacing={1}>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        disabled={!p.has_active_consent}
-                        onClick={() => setToast({ open: true, severity: 'info', message: 'Open patient view is next.' })}
-                      >
-                        {isAmharic ? 'ዳሽቦርድ ተመልከት' : 'VIEW DASHBOARD'}
-                      </Button>
-                      {!p.has_active_consent && (
-                        <Button variant="contained" size="small" onClick={() => requestConsent(p.id)}>
-                          {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST CONSENT'}
-                        </Button>
-                      )}
-                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Scope: {typeof p.scope === 'string' ? p.scope : JSON.stringify(p.scope || {})} | Expires:{' '}
+                      {p.expires_at ? new Date(p.expires_at).toLocaleString() : '-'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Last Access: {p.last_access ? new Date(p.last_access).toLocaleString() : '-'}
+                    </Typography>
+                    <Button variant="contained" size="small" onClick={() => openPatientView(p)}>
+                      {isAmharic ? 'ዳሽቦርድ ተመልከት' : 'VIEW DASHBOARD'}
+                    </Button>
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+            ))
+          )}
+        </Grid>
+      )}
+
+      {/* Tab 2: Ethiopian Health ID Access */}
+      {tab === 1 && (
+        <Box>
+          <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 2 }}>
+            {isAmharic ? 'የታካሚ መታወቂያ ያስገቡ' : 'ENTER PATIENT ETHIOPIAN HEALTH ID'}
+          </Typography>
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} md={8}>
+              <TextField
+                fullWidth
+                label={isAmharic ? 'የኢትዮጵያ የጤና መታወቂያ' : 'Ethiopian Health ID'}
+                placeholder="ETH-2026-0415-AB123"
+                value={healthId}
+                onChange={(e) => setHealthId(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ height: '100%' }}>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{ height: '100%' }}
+                  disabled={isLookingUp}
+                  onClick={runSearch}
+                >
+                  {isAmharic ? 'ፈልግ' : 'LOOKUP'}
+                </Button>
+                <Button fullWidth variant="contained" sx={{ height: '100%' }} onClick={() => requestConsent()}>
+                  {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST ACCESS'}
+                </Button>
+              </Stack>
+            </Grid>
           </Grid>
+
+          {patientLookup && (
+            <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
+              <CardContent>
+                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                  {patientLookup.full_name} | {patientLookup.ethiopian_health_id}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  {isAmharic ? 'የፈቃድ ሁኔታ፡ ' : 'Consent Status: '}
+                  {patientLookup.has_active_consent ? '✅ ACTIVE' : '❌ NO ACTIVE CONSENT'}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={!patientLookup.has_active_consent}
+                    onClick={() => openPatientView(patientLookup)}
+                  >
+                    {isAmharic ? 'መረጃ ተመልከት' : 'VIEW DATA'}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={patientLookup.has_active_consent}
+                    onClick={() => requestConsent()}
+                  >
+                    {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST ACCESS'}
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
         </Box>
       )}
 
@@ -415,6 +454,121 @@ export const ProfessionalDashboard: React.FC = () => {
           {toast.message}
         </Alert>
       </Snackbar>
+
+      <Dialog open={patientViewOpen} onClose={() => setPatientViewOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>{isAmharic ? 'የታካሚ ዳሽቦርድ (የሐኪም እይታ)' : "Patient Dashboard (Doctor's View)"}</DialogTitle>
+        <DialogContent>
+          {isLoadingPatientView ? (
+            <Typography variant="body2">{isAmharic ? 'በመጫን ላይ...' : 'Loading...'}</Typography>
+          ) : (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    {selectedPatient?.full_name || patientViewData?.patient?.full_name || '-'} ({selectedPatient?.ethiopian_health_id || patientViewData?.patient?.ethiopian_health_id || '-'})
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Scope: {patientViewData?.consent?.scope ? JSON.stringify(patientViewData.consent.scope) : (selectedPatient?.scope ? JSON.stringify(selectedPatient.scope) : '-')}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Consent: ACTIVE | Expires: {patientViewData?.consent?.expires_at ? new Date(patientViewData.consent.expires_at).toLocaleString() : '-'}
+                  </Typography>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+                    Patient Information
+                  </Typography>
+                  <Typography variant="body2">
+                    Name: {patientViewData?.patient?.full_name || '-'} | Gender: {patientViewData?.patient?.gender || '-'}
+                  </Typography>
+                  <Typography variant="body2">
+                    Date of Birth: {patientViewData?.patient?.date_of_birth ? new Date(patientViewData.patient.date_of_birth).toLocaleDateString() : '-'}
+                  </Typography>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+                    Medical History / Records
+                  </Typography>
+                  {(patientViewData?.records || []).slice(0, 8).map((r: any) => (
+                    <Typography key={r.id} variant="body2" sx={{ mb: 0.5 }}>
+                      • {r.record_date ? new Date(r.record_date).toLocaleDateString() : new Date(r.created_at).toLocaleDateString()} - {r.record_type} ({r.status})
+                    </Typography>
+                  ))}
+                  {(!patientViewData?.records || patientViewData.records.length === 0) && (
+                    <Typography variant="body2" color="text.secondary">
+                      No records yet.
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Typography variant="subtitle2" fontWeight={700}>
+                {isAmharic ? 'አዲስ መዝገብ ጨምር (auto-revoke)' : 'Add New Record (auto-revoke)'}
+              </Typography>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                <Button variant="outlined" onClick={() => setRecordType('diagnosis')}>Add Diagnosis</Button>
+                <Button variant="outlined" onClick={() => setRecordType('prescription')}>Add Prescription</Button>
+                <Button variant="outlined" onClick={() => setRecordType('note')}>Add Note</Button>
+                <Button variant="outlined" onClick={() => setRecordType('lab')}>Order Lab</Button>
+              </Stack>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                <FormControl fullWidth>
+                  <InputLabel>Record Type</InputLabel>
+                  <Select label="Record Type" value={recordType} onChange={(e) => setRecordType(String(e.target.value))}>
+                    <MenuItem value="diagnosis">Diagnosis</MenuItem>
+                    <MenuItem value="prescription">Prescription</MenuItem>
+                    <MenuItem value="lab">Lab</MenuItem>
+                    <MenuItem value="note">Note</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField
+                  fullWidth
+                  label="Record Date (optional)"
+                  type="date"
+                  value={recordDate}
+                  onChange={(e) => setRecordDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Stack>
+              <TextField
+                fullWidth
+                multiline
+                minRows={4}
+                label='Record JSON (e.g. {"summary":"Follow-up","details":"..."} )'
+                value={recordPayload}
+                onChange={(e) => setRecordPayload(e.target.value)}
+              />
+              <Button variant="contained" onClick={createRecord}>
+                {isAmharic ? 'መዝገብ አስቀምጥ' : 'SAVE RECORD'}
+              </Button>
+
+              <Divider />
+
+              <Typography variant="subtitle2" fontWeight={700}>
+                {isAmharic ? 'ያለ መዝገብ አሻሽል (auto-revoke)' : 'Update Existing Record (auto-revoke)'}
+              </Typography>
+              <TextField
+                fullWidth
+                label="Record ID"
+                value={updateRecordId}
+                onChange={(e) => setUpdateRecordId(e.target.value)}
+              />
+              <Button variant="outlined" onClick={updateRecord}>
+                {isAmharic ? 'መዝገብ አሻሽል' : 'UPDATE RECORD'}
+              </Button>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPatientViewOpen(false)}>{isAmharic ? 'ዝጋ' : 'Close'}</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Tab 4: My Schedule */}
       {tab === 3 && (

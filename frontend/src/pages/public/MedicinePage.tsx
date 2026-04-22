@@ -27,6 +27,7 @@ import { Search, VerifiedUser, LocalHospital, Healing, Info, Clear } from '@mui/
 import { useUI } from '@/contexts/UIContext';
 import { VerifiedRemedy } from '@/types';
 import { catalogService } from '@/services/catalogService';
+import { mockSelfCareRemedies } from '@/data/medicinesData';
 
 const bodyParts = [
   { id: 'skin', label: 'Skin', labelAm: 'ቆዳ', icon: <Healing /> },
@@ -97,10 +98,39 @@ export const MedicinePage: React.FC = () => {
       try {
         setLoadingRemedies(true);
         setRemediesError(null);
-        const rows = await catalogService.getMedicines();
-        if (active) setRemedies(rows);
+        // Always start from the curated local list (20 medicines) so DB extras never appear.
+        // Merge in missing text from API matches by name, but never add new medicines.
+        const apiRows = await catalogService.getMedicines().catch(() => []);
+        const apiByName = new Map(
+          (Array.isArray(apiRows) ? apiRows : []).map((r) => [String(r.name || '').trim().toLowerCase(), r] as const),
+        );
+
+        const merged = mockSelfCareRemedies.map((local) => {
+          const api = apiByName.get(local.name.trim().toLowerCase());
+          return {
+            ...local,
+            // Keep curated imageUrl/categories; only fill missing text fields from API if local is empty.
+            description: local.description || api?.description || local.description,
+            descriptionAmharic: local.descriptionAmharic || api?.descriptionAmharic || local.descriptionAmharic,
+            preparation: local.preparation || api?.preparation || local.preparation,
+            preparationAmharic: local.preparationAmharic || api?.preparationAmharic || local.preparationAmharic,
+            dosage: local.dosage || api?.dosage || local.dosage,
+            dosageAmharic: local.dosageAmharic || api?.dosageAmharic || local.dosageAmharic,
+            indications: (local.indications?.length ? local.indications : api?.indications) || local.indications,
+            indicationsAmharic: (local.indicationsAmharic?.length ? local.indicationsAmharic : api?.indicationsAmharic) || local.indicationsAmharic,
+            safetyWarnings: (local.safetyWarnings?.length ? local.safetyWarnings : api?.safetyWarnings) || local.safetyWarnings,
+            safetyWarningsAmharic:
+              (local.safetyWarningsAmharic?.length ? local.safetyWarningsAmharic : api?.safetyWarningsAmharic) ||
+              local.safetyWarningsAmharic,
+          };
+        });
+
+        if (active) setRemedies(merged);
       } catch (error: any) {
-        if (active) setRemediesError(error?.message || 'Failed to load medicines');
+        if (active) {
+          setRemedies(mockSelfCareRemedies);
+          setRemediesError(error?.message || null);
+        }
       } finally {
         if (active) setLoadingRemedies(false);
       }

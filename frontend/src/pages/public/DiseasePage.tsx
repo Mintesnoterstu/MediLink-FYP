@@ -32,6 +32,7 @@ import { BodyMap } from '@/components/ui/body-map/BodyMap';
 import { useUI } from '@/contexts/UIContext';
 import { catalogService } from '@/services/catalogService';
 import { DiseaseSymptomsVideoSection } from '@/components/features/public/DiseaseLibrary/DiseaseSymptomsVideoSection';
+import { mockDiseases as localDiseases } from '@/data/diseasesData';
 
 const diseaseCategories: Array<{ value: DiseaseCategory | 'all'; label: string; labelAm: string }> = [
   { value: 'all', label: 'All', labelAm: 'ሁሉም' },
@@ -83,10 +84,37 @@ export const DiseasePage: React.FC = () => {
       try {
         setLoadingDiseases(true);
         setDiseasesError(null);
-        const rows = await catalogService.getDiseases();
-        if (active) setDiseases(rows);
+        // Always start from the curated local list (30 diseases) so DB extras never appear.
+        // If the backend returns matching rows, we can merge missing text fields, but we never add new diseases.
+        const apiRows = await catalogService.getDiseases().catch(() => []);
+        const apiByName = new Map(
+          (Array.isArray(apiRows) ? apiRows : []).map((d) => [String(d.name || '').trim().toLowerCase(), d] as const),
+        );
+
+        const merged = localDiseases.map((local) => {
+          const api = apiByName.get(local.name.trim().toLowerCase());
+          return {
+            ...local,
+            // Keep curated videoUrl/categories; only fill missing long-text fields from API if local is empty.
+            description: local.description || api?.description || local.description,
+            descriptionAmharic: local.descriptionAmharic || api?.descriptionAmharic || local.descriptionAmharic,
+            symptoms: (local.symptoms?.length ? local.symptoms : api?.symptoms) || local.symptoms,
+            symptomsAmharic: (local.symptomsAmharic?.length ? local.symptomsAmharic : api?.symptomsAmharic) || local.symptomsAmharic,
+            causes: (local.causes?.length ? local.causes : api?.causes) || local.causes,
+            causesAmharic: (local.causesAmharic?.length ? local.causesAmharic : api?.causesAmharic) || local.causesAmharic,
+            prevention: (local.prevention?.length ? local.prevention : api?.prevention) || local.prevention,
+            preventionAmharic: (local.preventionAmharic?.length ? local.preventionAmharic : api?.preventionAmharic) || local.preventionAmharic,
+            treatment: (local.treatment?.length ? local.treatment : api?.treatment) || local.treatment,
+            treatmentAmharic: (local.treatmentAmharic?.length ? local.treatmentAmharic : api?.treatmentAmharic) || local.treatmentAmharic,
+          };
+        });
+
+        if (active) setDiseases(merged);
       } catch (error: any) {
-        if (active) setDiseasesError(error?.message || 'Failed to load diseases');
+        if (active) {
+          setDiseases(localDiseases);
+          setDiseasesError(error?.message || null);
+        }
       } finally {
         if (active) setLoadingDiseases(false);
       }
@@ -486,25 +514,6 @@ export const DiseasePage: React.FC = () => {
               </Box>
             </DialogTitle>
             <DialogContent>
-              {!selectedDisease.videoUrl && (
-                <Box
-                  sx={{
-                    width: '100%',
-                    height: 180,
-                    bgcolor: 'grey.200',
-                    borderRadius: 2,
-                    mb: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    {isAmharic ? 'ምስል ቦታ' : 'Image placeholder'}
-                  </Typography>
-                </Box>
-              )}
-
               <Typography variant="body1" paragraph sx={{ lineHeight: 1.7 }}>
                 {getText(selectedDisease, 'description')}
               </Typography>

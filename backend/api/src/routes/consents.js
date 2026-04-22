@@ -147,12 +147,15 @@ router.post(
     });
 
     if (!result) return res.status(404).json({ error: 'Consent request not found' });
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const dashboardLink = `${frontendUrl}/dashboard?patientId=${result.patient_id}`;
     await sendConsentGrantedEmailToProfessional({
       toEmail: result.doctor_email || null,
       doctorName: result.doctor_name || 'Doctor',
       patientName: result.patient_name || 'Patient',
       scope: JSON.stringify(result.scope || {}),
       expiresAt: result.expires_at ? new Date(result.expires_at).toISOString() : 'N/A',
+      dashboardLink,
     });
     return res.json({ success: true, consent: result });
   } catch (err) {
@@ -289,6 +292,7 @@ router.post('/records/:id/approve', authRequired, requireRole('patient'), async 
       toEmail: updated.info?.doctor_email || null,
       doctorName: updated.info?.doctor_name || 'Doctor',
       patientName: updated.info?.patient_name || 'Patient',
+      dashboardLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard?patientId=${updated.row.patient_id}`,
     });
 
     return res.json({ success: true });

@@ -1,6 +1,14 @@
 import { execSync, spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 
 const port = Number(process.env.PORT || 3001);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load workspace .env so DATABASE_URL is available for migrations.
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 function killPortWindows(targetPort) {
   try {
@@ -53,6 +61,16 @@ if (process.platform === 'win32') {
   killPortWindows(port);
 } else {
   killPortUnix(port);
+}
+
+// Ensure database schema is up-to-date before starting API.
+try {
+  const migratePath = path.resolve(__dirname, '../../../database/node/scripts/migrate-up.mjs');
+  console.log('Applying database migrations...');
+  execSync(`node "${migratePath}"`, { stdio: 'inherit' });
+} catch (e) {
+  console.error('Migration step failed. API will not start.');
+  process.exit(1);
 }
 
 const child = spawn(process.execPath, ['src/server.js'], {

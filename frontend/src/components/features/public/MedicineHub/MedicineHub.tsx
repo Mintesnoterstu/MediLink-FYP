@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Box, Typography, Grid, Card, CardContent, TextField, Tabs, Tab, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, List, ListItem, ListItemText, ListItemIcon, Alert, InputAdornment } from '@mui/material';
 import { Search, VerifiedUser, LocalHospital, Healing, Info } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { VerifiedRemedy, RemedyCategory } from '@/types';
+import { VerifiedRemedy } from '@/types';
+import { mockSelfCareRemedies as dataRemedies } from '@/data/medicinesData';
 
 interface MedicineHubProps {
   remedies?: VerifiedRemedy[];
@@ -31,48 +32,7 @@ const medicineTypes = [
   { id: 'supplements', label: 'Nutritional Supplements' },
 ];
 
-const mockSelfCareRemedies = [
-  {
-    id: '1',
-    name: 'Moringa (Shiferaw)',
-    nameAmharic: 'ሽፈራው',
-    category: 'herbal' as RemedyCategory,
-    bodyPart: 'general',
-    healthGoal: 'immunity',
-    description: 'Moringa leaves are rich in vitamins and minerals, traditionally used for boosting immunity and treating malnutrition.',
-    preparation: 'Boil fresh leaves in water for 10 minutes, strain and drink as tea.',
-    dosage: '1 cup, 2-3 times daily',
-    indications: ['Malnutrition', 'Weakness', 'Low immunity'],
-    contraindications: ['Pregnancy (in large amounts)', 'Blood thinning medications'],
-    verificationLevel: 'verified' as const,
-    ministryApproved: true,
-    scientificEvidence: 'strong' as const,
-    safetyWarnings: ['Consult doctor if taking blood thinners'],
-    medicationInteractions: ['Warfarin', 'Aspirin'],
-    culturalContext: 'Widely used in Ethiopian traditional medicine for generations',
-    modernCorrelation: 'Rich in Vitamin C, A, and iron. Scientific studies confirm nutritional benefits.',
-  },
-  {
-    id: '2',
-    name: 'Honey for Cough',
-    nameAmharic: 'ማር ለሳል',
-    category: 'food-medicine' as RemedyCategory,
-    bodyPart: 'respiratory',
-    healthGoal: 'general',
-    description: 'Raw honey is traditionally used to soothe coughs and sore throats.',
-    preparation: 'Take 1-2 teaspoons of raw honey directly or mix with warm water.',
-    dosage: 'As needed, up to 3 times daily',
-    indications: ['Cough', 'Sore throat', 'Cold symptoms'],
-    contraindications: ['Children under 1 year', 'Diabetes (use with caution)'],
-    verificationLevel: 'verified' as const,
-    ministryApproved: true,
-    scientificEvidence: 'moderate' as const,
-    safetyWarnings: ['Never give to infants under 1 year'],
-    medicationInteractions: [],
-    culturalContext: 'Common household remedy across Ethiopia',
-    modernCorrelation: 'Honey has antimicrobial properties and can soothe throat irritation.',
-  },
-];
+// Use the real curated list (with images) from `src/data/medicinesData.ts`
 
 const mockProfessionalCare = [
   {
@@ -103,7 +63,7 @@ export const MedicineHub: React.FC<MedicineHubProps> = ({
   const [selectedRemedy, setSelectedRemedy] = useState<VerifiedRemedy | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const remedies = propRemedies || mockSelfCareRemedies;
+  const remedies = propRemedies || dataRemedies;
 
   const filteredRemedies = useMemo(() => {
     let filtered = remedies;
@@ -247,6 +207,15 @@ export const MedicineHub: React.FC<MedicineHubProps> = ({
                     onClick={() => handleRemedyClick(remedy)}
                   >
                     <CardContent>
+                      {remedy.imageUrl ? (
+                        <Box
+                          component="img"
+                          src={remedy.imageUrl}
+                          alt={remedy.name}
+                          sx={{ width: '100%', height: 160, objectFit: 'contain', mb: 1, borderRadius: 1, bgcolor: 'background.default' }}
+                          loading="lazy"
+                        />
+                      ) : null}
                       <Box display="flex" justifyContent="space-between" alignItems="start" mb={2}>
                         <Typography variant="h6" fontWeight={600}>
                           {remedy.nameAmharic || remedy.name}
@@ -359,6 +328,15 @@ export const MedicineHub: React.FC<MedicineHubProps> = ({
               </Box>
             </DialogTitle>
             <DialogContent>
+              {selectedRemedy.imageUrl ? (
+                <Box
+                  component="img"
+                  src={selectedRemedy.imageUrl}
+                  alt={selectedRemedy.name}
+                  sx={{ width: '100%', maxHeight: 260, objectFit: 'contain', mb: 2, borderRadius: 1, bgcolor: 'background.default' }}
+                  loading="lazy"
+                />
+              ) : null}
               <Typography variant="body1" paragraph>
                 {selectedRemedy.description}
               </Typography>
