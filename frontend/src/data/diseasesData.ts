@@ -239,7 +239,6 @@ export const mockDiseases: Disease[] = [
     bodyRegions: ['head', 'chest', 'abdomen', 'muscles'],
     seasonal: ['Rainy season'],
     seasonalAmharic: ['ዝናባማ ወቅት'],
-    videoUrl: 'https://www.youtube.com/embed/5u6SeLdO2C8',
   },
   {
     id: 'ast1',
@@ -367,7 +366,6 @@ export const mockDiseases: Disease[] = [
     severity: 'critical',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['whole body', 'immune system'],
-    videoUrl: 'https://www.youtube.com/embed/CGKrMipFDPc',
   },
   // AUTOIMMUNE (2)
   {
@@ -426,7 +424,6 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['hands', 'feet', 'wrists', 'knees', 'joints'],
-    videoUrl: 'https://www.youtube.com/embed/FB_FbpkUsGA',
   },
   {
     id: 'dia1',
@@ -484,7 +481,6 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['pancreas', 'whole body'],
-    videoUrl: 'https://www.youtube.com/embed/aoQjjkTK3E4',
   },
   // SILENT DISEASES (remaining)
   {
@@ -525,7 +521,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['abdomen', 'liver'],
-    videoUrl: 'https://www.youtube.com/embed/yoXskKSlnrU',
+    videoUrl: undefined,
   },
   {
     id: 'chol1',
@@ -565,7 +561,7 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['throat', 'lungs'],
-    videoUrl: 'https://www.youtube.com/embed/8OHYqBDDEZM',
+    videoUrl: undefined,
   },
   {
     id: 'gla1',
@@ -605,7 +601,7 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['neck', 'whole body'],
-    videoUrl: 'https://www.youtube.com/embed/c4w3igzxduM',
+    videoUrl: undefined,
   },
   {
     id: 'fat1',
@@ -667,7 +663,7 @@ export const mockDiseases: Disease[] = [
     severity: 'critical',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['heart', 'chest', 'lungs'],
-    videoUrl: 'https://www.youtube.com/embed/7bfIcfa6PHw',
+    videoUrl: undefined,
   },
   {
     id: 'copd1',
@@ -687,7 +683,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['lungs', 'chest'],
-    videoUrl: 'https://www.youtube.com/embed/_TgKuvMELjY',
+    videoUrl: undefined,
   },
   {
     id: 'scd1',
@@ -707,7 +703,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['blood', 'whole body'],
-    videoUrl: 'https://www.youtube.com/embed/8RjB3KC8EUU',
+    videoUrl: undefined,
   },
   {
     id: 'tb1',
@@ -727,7 +723,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'high' },
     bodyRegions: ['lungs', 'chest'],
-    videoUrl: 'https://www.youtube.com/embed/tr-PZ_fsg6c',
+    videoUrl: undefined,
   },
   {
     id: 'typh1',
@@ -747,7 +743,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'medium' },
     bodyRegions: ['abdomen', 'whole body'],
-    videoUrl: 'https://www.youtube.com/embed/Fywpx6y9_SQ',
+    videoUrl: undefined,
   },
 
   // Autoimmune diseases (remaining)
@@ -769,7 +765,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['skin', 'joints', 'kidneys'],
-    videoUrl: 'https://www.youtube.com/embed/LI-jJZP2m3o',
+    videoUrl: undefined,
   },
   {
     id: 'ms1',
@@ -789,7 +785,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['brain', 'spine'],
-    videoUrl: 'https://www.youtube.com/embed/-noqnffdnTU',
+    videoUrl: undefined,
   },
   {
     id: 'psor1',
@@ -809,7 +805,7 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['skin'],
-    videoUrl: 'https://www.youtube.com/embed/HCzXYlYJwQo',
+    videoUrl: undefined,
   },
   {
     id: 'hash1',
@@ -829,7 +825,7 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['neck'],
-    videoUrl: 'https://www.youtube.com/embed/ehG9RMgIFkE',
+    videoUrl: undefined,
   },
   {
     id: 'grav1',
@@ -849,7 +845,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['neck', 'heart'],
-    videoUrl: 'https://www.youtube.com/embed/ypFnykab9ZQ',
+    videoUrl: undefined,
   },
   {
     id: 'cel1',
@@ -869,7 +865,7 @@ export const mockDiseases: Disease[] = [
     severity: 'moderate',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['abdomen', 'intestines'],
-    videoUrl: 'https://www.youtube.com/embed/oOPc5rnY9Qc',
+    videoUrl: undefined,
   },
   {
     id: 'sj1',
@@ -909,7 +905,7 @@ export const mockDiseases: Disease[] = [
     severity: 'severe',
     prevalence: { region: 'Jimma Zone', prevalence: 'low' },
     bodyRegions: ['abdomen', 'intestines'],
-    videoUrl: 'https://www.youtube.com/embed/PisLMsZOzaE',
+    videoUrl: undefined,
   },
   {
     id: 'add1',
