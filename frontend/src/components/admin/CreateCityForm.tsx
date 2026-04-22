@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Button, Grid, TextField } from '@mui/material';
+import { useUI } from '@/contexts/UIContext';
 import { CreateCityAdminPayload } from '@/features/admin/services/zonalAdminService';
 
 const initialForm: CreateCityAdminPayload = {
@@ -17,6 +18,9 @@ interface Props {
 }
 
 export const CreateCityForm: React.FC<Props> = ({ loading = false, onSubmit }) => {
+  const { language } = useUI();
+  const isAmharic = language === 'am';
+  const t = (en: string, am: string) => (isAmharic ? am : en);
   const [form, setForm] = React.useState<CreateCityAdminPayload>(initialForm);
 
   const setField = (key: keyof CreateCityAdminPayload, value: string) => {
@@ -33,33 +37,33 @@ export const CreateCityForm: React.FC<Props> = ({ loading = false, onSubmit }) =
     <Box component="form" onSubmit={handleSubmit}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="City Name" value={form.cityName} disabled />
+          <TextField fullWidth required label={t('City Name', 'የከተማ ስም')} value={form.cityName} disabled />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Admin Full Name" value={form.fullName} onChange={(e) => setField('fullName', e.target.value)} />
+          <TextField fullWidth required label={t('Admin Full Name', 'የአስተዳዳሪ ሙሉ ስም')} value={form.fullName} onChange={(e) => setField('fullName', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField type="email" fullWidth required label="Admin Email" value={form.email} onChange={(e) => setField('email', e.target.value)} />
+          <TextField type="email" fullWidth required label={t('Admin Email', 'የአስተዳዳሪ ኢሜይል')} value={form.email} onChange={(e) => setField('email', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
           <TextField
             type="email"
             fullWidth
             required
-            label="Recovery Email"
+            label={t('Recovery Email', 'የመልሶ ማግኛ ኢሜይል')}
             value={form.recoveryEmail}
             onChange={(e) => setField('recoveryEmail', e.target.value)}
           />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Phone Number" value={form.phoneNumber} onChange={(e) => setField('phoneNumber', e.target.value)} />
+          <TextField fullWidth required label={t('Phone Number', 'ስልክ ቁጥር')} value={form.phoneNumber} onChange={(e) => setField('phoneNumber', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Official Title" value={form.officialTitle} onChange={(e) => setField('officialTitle', e.target.value)} />
+          <TextField fullWidth required label={t('Official Title', 'የስራ መደብ')} value={form.officialTitle} onChange={(e) => setField('officialTitle', e.target.value)} />
         </Grid>
       </Grid>
       <Button sx={{ mt: 2 }} variant="contained" type="submit" disabled={loading}>
-        {loading ? 'Creating...' : 'Create City Admin'}
+        {loading ? t('Creating...', 'በመፍጠር ላይ...') : t('Create City Admin', 'የከተማ አስተዳዳሪ ፍጠር')}
       </Button>
     </Box>
   );

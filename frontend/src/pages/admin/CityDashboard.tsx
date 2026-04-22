@@ -9,18 +9,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
-  Drawer,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Snackbar,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
-import { Home, BarChart, Settings, Logout as LogoutIcon, LocalHospital, Groups } from '@mui/icons-material';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { CreateFacilityAdminForm, CreateFacilityAdminPayload } from '@/components/admin/CreateFacilityAdminForm';
 import { FacilityAdminsList } from '@/components/admin/FacilityAdminsList';
@@ -29,10 +23,16 @@ import { StatisticsCards } from '@/components/admin/StatisticsCards';
 import { cityAdminService } from '@/features/admin/services/cityAdminService';
 import { useNavigate } from 'react-router-dom';
 import { useUI } from '@/contexts/UIContext';
+import { useDashboardMenu } from '@/features/patient/dashboard/context/DashboardMenuContext';
+import {
+  AdminHamburgerMenu,
+  AdminHamburgerAction,
+} from '@/features/admin/components/AdminHamburgerMenu';
 
 export const CityDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { language } = useUI();
+  const { menuOpen, closeMenu } = useDashboardMenu();
   const isAmharic = language === 'am';
   const navigate = useNavigate();
   const [loading, setLoading] = React.useState(false);
@@ -40,8 +40,8 @@ export const CityDashboard: React.FC = () => {
   const [facilityAdmins, setFacilityAdmins] = React.useState<any[]>([]);
   const [facilities, setFacilities] = React.useState<any[]>([]);
   const [audit, setAudit] = React.useState<any[]>([]);
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [active, setActive] = React.useState<'dashboard' | 'facility' | 'statistics' | 'audit' | 'settings'>('dashboard');
+  const [facilityTab, setFacilityTab] = React.useState<'create' | 'admins' | 'facilities'>('create');
   const [confirmLogout, setConfirmLogout] = React.useState(false);
   const [toast, setToast] = React.useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -50,6 +50,7 @@ export const CityDashboard: React.FC = () => {
   });
 
   const showToast = (message: string, severity: 'success' | 'error') => setToast({ open: true, message, severity });
+  const roleLabel = isAmharic ? 'የከተማ አስተዳዳሪ' : 'City Admin';
 
   const load = React.useCallback(async () => {
     const [s, admins, facs, a] = await Promise.all([
@@ -87,23 +88,55 @@ export const CityDashboard: React.FC = () => {
     });
   };
 
+  const handleAdminMenuSelect = (action: AdminHamburgerAction) => {
+    switch (action) {
+      case 'dashboard':
+        setActive('dashboard');
+        break;
+      case 'facility_management':
+        setActive('facility');
+        break;
+      case 'statistics':
+        setActive('statistics');
+        break;
+      case 'audit':
+        setActive('audit');
+        break;
+      case 'settings':
+        setActive('settings');
+        break;
+      case 'help':
+        navigate('/help');
+        break;
+      case 'logout':
+        setConfirmLogout(true);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0, overflowX: 'hidden', boxSizing: 'border-box' }}>
       <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Box display="flex" alignItems="center" gap={1.25}>
-          <IconButton onClick={() => setDrawerOpen(true)} size="small" aria-label="open menu">
-            <Home />
-          </IconButton>
-          <Box>
-            <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }, lineHeight: 1.2 }}>
-              {isAmharic ? 'የከተማ አስተዳዳሪ ዳሽቦርድ' : 'CITY ADMIN DASHBOARD'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              <strong>{user?.name}</strong> · {isAmharic ? 'ሚና፡ የከተማ አስተዳዳሪ (ጅማ ከተማ)' : 'Role: City Admin (Jimma City)'}
-            </Typography>
-          </Box>
+        <Box>
+          <Typography variant="h6" fontWeight={800} sx={{ fontSize: { xs: '0.95rem', sm: '1.1rem', md: '1.25rem' }, lineHeight: 1.2 }}>
+            {isAmharic ? 'የከተማ አስተዳዳሪ ዳሽቦርድ' : 'CITY ADMIN DASHBOARD'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            <strong>{user?.name}</strong> · {isAmharic ? 'ሚና፡ የከተማ አስተዳዳሪ (ጅማ ከተማ)' : 'Role: City Admin (Jimma City)'}
+          </Typography>
         </Box>
       </Box>
+
+      <AdminHamburgerMenu
+        variant="woreda_city"
+        isOpen={menuOpen}
+        onClose={closeMenu}
+        onSelect={handleAdminMenuSelect}
+        userName={user?.name}
+        roleLabel={roleLabel}
+      />
 
       <Alert severity="info" sx={{ mb: 2 }}>
         {isAmharic
@@ -117,24 +150,39 @@ export const CityDashboard: React.FC = () => {
 
       {(active === 'dashboard' || active === 'facility') && (
         <Stack spacing={3} sx={{ mt: 3 }}>
+          <Tabs
+            value={facilityTab}
+            onChange={(_e, val) => setFacilityTab(val)}
+            sx={{ borderBottom: '1px solid', borderColor: 'divider' }}
+          >
+            <Tab value="create" label={isAmharic ? 'አስተዳዳሪ ፍጠር' : 'Create Admin'} />
+            <Tab value="admins" label={isAmharic ? 'የተቋም አስተዳዳሪዎች' : 'Facility Admins'} />
+            <Tab value="facilities" label={isAmharic ? 'ተቋማት' : 'Facilities'} />
+          </Tabs>
+          {facilityTab === 'create' && (
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'የተቋም አስተዳዳሪ ፍጠር' : 'Create Facility Admin'}</Typography>
               <CreateFacilityAdminForm loading={loading} onSubmit={onCreateAdmin} />
             </CardContent>
           </Card>
+          )}
+          {facilityTab === 'admins' && (
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'የተቋም አስተዳዳሪዎች' : 'Facility Admins'}</Typography>
               <FacilityAdminsList rows={facilityAdmins} />
             </CardContent>
           </Card>
+          )}
+          {facilityTab === 'facilities' && (
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={900} gutterBottom>{isAmharic ? 'ተቋማት' : 'Facilities'}</Typography>
               <FacilitiesList rows={facilities} />
             </CardContent>
           </Card>
+          )}
         </Stack>
       )}
 
@@ -165,55 +213,6 @@ export const CityDashboard: React.FC = () => {
       <Snackbar open={toast.open} autoHideDuration={3500} onClose={() => setToast((s) => ({ ...s, open: false }))}>
         <Alert severity={toast.severity} variant="filled">{toast.message}</Alert>
       </Snackbar>
-
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            width: { xs: '100%', sm: 280 },
-            bgcolor: '#2C3E50',
-            color: 'white',
-          },
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle1" fontWeight={800}>
-            {user?.name || (isAmharic ? 'የከተማ አስተዳዳሪ' : 'City Admin')}
-          </Typography>
-          <Typography variant="caption" sx={{ opacity: 0.8 }}>
-            {isAmharic ? 'ሚና፡ የከተማ አስተዳዳሪ' : 'Role: City Admin'}
-          </Typography>
-        </Box>
-        <Divider sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
-        <List>
-          <ListItemButton onClick={() => { setActive('dashboard'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
-            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Home /></ListItemIcon>
-            <ListItemText primary={isAmharic ? 'ዳሽቦርድ' : 'Dashboard'} />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setActive('facility'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
-            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><LocalHospital /></ListItemIcon>
-            <ListItemText primary={isAmharic ? 'የተቋም አስተዳደር' : 'Facility Management'} />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setActive('statistics'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
-            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><BarChart /></ListItemIcon>
-            <ListItemText primary={isAmharic ? 'ስታቲስቲክስ' : 'Statistics'} />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setActive('audit'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
-            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Groups /></ListItemIcon>
-            <ListItemText primary={isAmharic ? 'የኦዲት መዝገብ' : 'Audit Logs'} />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setActive('settings'); setDrawerOpen(false); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
-            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><Settings /></ListItemIcon>
-            <ListItemText primary={isAmharic ? 'ቅንብሮች' : 'Settings'} />
-          </ListItemButton>
-          <ListItemButton onClick={() => { setDrawerOpen(false); setConfirmLogout(true); }} sx={{ py: 1.2, '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' } }}>
-            <ListItemIcon sx={{ color: 'white', minWidth: 38 }}><LogoutIcon /></ListItemIcon>
-            <ListItemText primary={isAmharic ? 'ውጣ' : 'Logout'} />
-          </ListItemButton>
-        </List>
-      </Drawer>
 
       <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)}>
         <DialogTitle>{isAmharic ? 'መውጣትን ያረጋግጡ' : 'Confirm Logout'}</DialogTitle>

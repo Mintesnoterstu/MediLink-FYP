@@ -24,10 +24,11 @@ export const DashboardHeader: React.FC = () => {
   const navigate = useNavigate();
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const isPatient = user?.role === 'patient';
+  const isAdmin = user?.role === 'admin';
   const { openMenu } = useDashboardMenu();
   const isAmharic = language === 'am';
   const handleDrawerOpen = () => {
-    if (isPatient) {
+    if (isPatient || isAdmin) {
       openMenu();
       return;
     }

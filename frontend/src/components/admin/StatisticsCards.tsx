@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, Grid, Typography } from '@mui/material';
+import { useUI } from '@/contexts/UIContext';
 
 interface Props {
   stats: {
@@ -9,16 +10,35 @@ interface Props {
   };
 }
 
-export const StatisticsCards: React.FC<Props> = ({ stats }) => (
-  <Grid container spacing={2}>
-    <Grid item xs={12} md={4}>
-      <Card><CardContent><Typography variant="caption">Total Facilities</Typography><Typography variant="h5">{stats.totalFacilities}</Typography></CardContent></Card>
+export const StatisticsCards: React.FC<Props> = ({ stats }) => {
+  const { language } = useUI();
+  const isAmharic = language === 'am';
+  return (
+    <Grid container spacing={2}>
+      <Grid item xs={12} md={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="caption">{isAmharic ? 'ጠቅላላ ተቋማት' : 'Total Facilities'}</Typography>
+            <Typography variant="h5">{stats.totalFacilities}</Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="caption">{isAmharic ? 'ጠቅላላ ባለሙያዎች' : 'Total Professionals'}</Typography>
+            <Typography variant="h5">{stats.totalProfessionals}</Typography>
+          </CardContent>
+        </Card>
+      </Grid>
+      <Grid item xs={12} md={4}>
+        <Card>
+          <CardContent>
+            <Typography variant="caption">{isAmharic ? 'ጠቅላላ ታካሚዎች' : 'Total Patients'}</Typography>
+            <Typography variant="h5">{stats.totalPatients.toLocaleString()}+</Typography>
+          </CardContent>
+        </Card>
+      </Grid>
     </Grid>
-    <Grid item xs={12} md={4}>
-      <Card><CardContent><Typography variant="caption">Total Professionals</Typography><Typography variant="h5">{stats.totalProfessionals}</Typography></CardContent></Card>
-    </Grid>
-    <Grid item xs={12} md={4}>
-      <Card><CardContent><Typography variant="caption">Total Patients</Typography><Typography variant="h5">{stats.totalPatients.toLocaleString()}+</Typography></CardContent></Card>
-    </Grid>
-  </Grid>
-);
+  );
+};

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Button, Grid, MenuItem, TextField } from '@mui/material';
+import { useUI } from '@/contexts/UIContext';
 
 export interface CreateFacilityAdminPayload {
   facilityName: string;
@@ -37,6 +38,9 @@ interface Props {
 }
 
 export const CreateFacilityAdminForm: React.FC<Props> = ({ loading = false, onSubmit }) => {
+  const { language } = useUI();
+  const isAmharic = language === 'am';
+  const t = (en: string, am: string) => (isAmharic ? am : en);
   const [form, setForm] = React.useState<CreateFacilityAdminPayload>(initialForm);
 
   const setField = (key: keyof CreateFacilityAdminPayload, value: string) => {
@@ -62,51 +66,51 @@ export const CreateFacilityAdminForm: React.FC<Props> = ({ loading = false, onSu
     <Box component="form" onSubmit={handleSubmit}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Facility Name" value={form.facilityName} onChange={(e) => setField('facilityName', e.target.value)} />
+          <TextField fullWidth required label={t('Facility Name', 'የተቋም ስም')} value={form.facilityName} onChange={(e) => setField('facilityName', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField select fullWidth required label="Facility Type" value={form.facilityType} onChange={(e) => setField('facilityType', e.target.value)}>
+          <TextField select fullWidth required label={t('Facility Type', 'የተቋም አይነት')} value={form.facilityType} onChange={(e) => setField('facilityType', e.target.value)}>
             <MenuItem value="Hospital">Hospital</MenuItem>
             <MenuItem value="Health Center">Health Center</MenuItem>
             <MenuItem value="Clinic">Clinic</MenuItem>
           </TextField>
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="License Number" value={form.licenseNumber} onChange={(e) => setField('licenseNumber', e.target.value)} />
+          <TextField fullWidth required label={t('License Number', 'የፈቃድ ቁጥር')} value={form.licenseNumber} onChange={(e) => setField('licenseNumber', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
           <Button component="label" variant="outlined" fullWidth sx={{ height: 56 }}>
-            Upload License Document
+            {t('Upload License Document', 'የፈቃድ ሰነድ ይጫኑ')}
             <input type="file" hidden accept=".pdf,image/*" onChange={(e) => handleFileChange(e.target.files?.[0])} />
           </Button>
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Facility Address" value={form.facilityAddress} onChange={(e) => setField('facilityAddress', e.target.value)} />
+          <TextField fullWidth required label={t('Facility Address', 'የተቋም አድራሻ')} value={form.facilityAddress} onChange={(e) => setField('facilityAddress', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Facility Phone" value={form.facilityPhone} onChange={(e) => setField('facilityPhone', e.target.value)} />
+          <TextField fullWidth required label={t('Facility Phone', 'የተቋም ስልክ')} value={form.facilityPhone} onChange={(e) => setField('facilityPhone', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField type="email" fullWidth required label="Facility Email" value={form.facilityEmail} onChange={(e) => setField('facilityEmail', e.target.value)} />
+          <TextField type="email" fullWidth required label={t('Facility Email', 'የተቋም ኢሜይል')} value={form.facilityEmail} onChange={(e) => setField('facilityEmail', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Admin Full Name" value={form.adminFullName} onChange={(e) => setField('adminFullName', e.target.value)} />
+          <TextField fullWidth required label={t('Admin Full Name', 'የአስተዳዳሪ ሙሉ ስም')} value={form.adminFullName} onChange={(e) => setField('adminFullName', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField type="email" fullWidth required label="Admin Email" value={form.adminEmail} onChange={(e) => setField('adminEmail', e.target.value)} />
+          <TextField type="email" fullWidth required label={t('Admin Email', 'የአስተዳዳሪ ኢሜይል')} value={form.adminEmail} onChange={(e) => setField('adminEmail', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField type="email" fullWidth required label="Recovery Email" value={form.recoveryEmail} onChange={(e) => setField('recoveryEmail', e.target.value)} />
+          <TextField type="email" fullWidth required label={t('Recovery Email', 'የመልሶ ማግኛ ኢሜይል')} value={form.recoveryEmail} onChange={(e) => setField('recoveryEmail', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Admin Phone" value={form.adminPhone} onChange={(e) => setField('adminPhone', e.target.value)} />
+          <TextField fullWidth required label={t('Admin Phone', 'የአስተዳዳሪ ስልክ')} value={form.adminPhone} onChange={(e) => setField('adminPhone', e.target.value)} />
         </Grid>
         <Grid item xs={12} md={6}>
-          <TextField fullWidth required label="Official Title" value={form.officialTitle} onChange={(e) => setField('officialTitle', e.target.value)} />
+          <TextField fullWidth required label={t('Official Title', 'የስራ መደብ')} value={form.officialTitle} onChange={(e) => setField('officialTitle', e.target.value)} />
         </Grid>
       </Grid>
       <Button sx={{ mt: 2 }} variant="contained" type="submit" disabled={loading}>
-        {loading ? 'Creating...' : 'Create Facility Admin'}
+        {loading ? t('Creating...', 'በመፍጠር ላይ...') : t('Create Facility Admin', 'የተቋም አስተዳዳሪ ፍጠር')}
       </Button>
     </Box>
   );

@@ -49,6 +49,7 @@ export const ProfessionalDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const isAmharic = language === 'am';
+  const t = (en: string, am: string) => (isAmharic ? am : en);
   const [tab, setTab] = React.useState(0);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [confirmLogout, setConfirmLogout] = React.useState(false);
@@ -358,8 +359,8 @@ export const ProfessionalDashboard: React.FC = () => {
             <Grid item xs={12} md={8}>
               <TextField
                 fullWidth
-                label={isAmharic ? 'የኢትዮጵያ የጤና መታወቂያ' : 'Ethiopian Health ID'}
-                placeholder="ETH-2026-0415-AB123"
+                label={t('Ethiopian Health ID', 'የኢትዮጵያ የጤና መታወቂያ')}
+                placeholder={t('ETH-2026-0415-AB123', 'ETH-2026-0415-AB123')}
                 value={healthId}
                 onChange={(e) => setHealthId(e.target.value)}
               />
@@ -373,10 +374,10 @@ export const ProfessionalDashboard: React.FC = () => {
                   disabled={isLookingUp}
                   onClick={runSearch}
                 >
-                  {isAmharic ? 'ፈልግ' : 'LOOKUP'}
+                  {t('LOOKUP', 'ፈልግ')}
                 </Button>
                 <Button fullWidth variant="contained" sx={{ height: '100%' }} onClick={() => requestConsent()}>
-                  {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST ACCESS'}
+                  {t('REQUEST ACCESS', 'ፈቃድ ጠይቅ')}
                 </Button>
               </Stack>
             </Grid>
@@ -399,7 +400,7 @@ export const ProfessionalDashboard: React.FC = () => {
                     disabled={!patientLookup.has_active_consent}
                     onClick={() => openPatientView(patientLookup)}
                   >
-                    {isAmharic ? 'መረጃ ተመልከት' : 'VIEW DATA'}
+                    {t('VIEW DATA', 'መረጃ ተመልከት')}
                   </Button>
                   <Button
                     variant="contained"
@@ -407,7 +408,7 @@ export const ProfessionalDashboard: React.FC = () => {
                     disabled={patientLookup.has_active_consent}
                     onClick={() => requestConsent()}
                   >
-                    {isAmharic ? 'ፈቃድ ጠይቅ' : 'REQUEST ACCESS'}
+                    {t('REQUEST ACCESS', 'ፈቃድ ጠይቅ')}
                   </Button>
                 </Stack>
               </CardContent>
@@ -434,7 +435,7 @@ export const ProfessionalDashboard: React.FC = () => {
                       {isAmharic ? 'ሁኔታ፡ ' : 'Status: '} {r.status}
                     </Typography>
                     <Button variant="outlined" size="small" onClick={() => cancelRequest(r.id)}>
-                      {isAmharic ? 'ጥያቄ ሰርዝ' : 'CANCEL REQUEST'}
+                      {t('CANCEL REQUEST', 'ጥያቄ ሰርዝ')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -479,7 +480,7 @@ export const ProfessionalDashboard: React.FC = () => {
               <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
-                    Patient Information
+                    {t('Patient Information', 'የታካሚ መረጃ')}
                   </Typography>
                   <Typography variant="body2">
                     Name: {patientViewData?.patient?.full_name || '-'} | Gender: {patientViewData?.patient?.gender || '-'}
@@ -493,7 +494,7 @@ export const ProfessionalDashboard: React.FC = () => {
               <Card sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
                 <CardContent>
                   <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
-                    Medical History and Records
+                    {t('Medical History and Records', 'የህክምና ታሪክ እና መዝገቦች')}
                   </Typography>
                   {(patientViewData?.records || []).slice(0, 8).map((r: any) => (
                     <Typography key={r.id} variant="body2" sx={{ mb: 0.5 }}>
@@ -512,24 +513,24 @@ export const ProfessionalDashboard: React.FC = () => {
                 {isAmharic ? 'አዲስ መዝገብ ጨምር (auto-revoke)' : 'Add New Record (auto-revoke)'}
               </Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
-                <Button variant="outlined" onClick={() => setRecordType('diagnosis')}>Add Diagnosis</Button>
-                <Button variant="outlined" onClick={() => setRecordType('prescription')}>Add Prescription</Button>
-                <Button variant="outlined" onClick={() => setRecordType('note')}>Add Note</Button>
-                <Button variant="outlined" onClick={() => setRecordType('lab')}>Order Lab</Button>
+                <Button variant="outlined" onClick={() => setRecordType('diagnosis')}>{t('Add Diagnosis', 'ምርመራ ጨምር')}</Button>
+                <Button variant="outlined" onClick={() => setRecordType('prescription')}>{t('Add Prescription', 'መድሀኒት ትእዛዝ ጨምር')}</Button>
+                <Button variant="outlined" onClick={() => setRecordType('note')}>{t('Add Note', 'ማስታወሻ ጨምር')}</Button>
+                <Button variant="outlined" onClick={() => setRecordType('lab')}>{t('Order Lab', 'ላብ ትዕዛዝ ስጥ')}</Button>
               </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
                 <FormControl fullWidth>
-                  <InputLabel>Record Type</InputLabel>
-                  <Select label="Record Type" value={recordType} onChange={(e) => setRecordType(String(e.target.value))}>
-                    <MenuItem value="diagnosis">Diagnosis</MenuItem>
-                    <MenuItem value="prescription">Prescription</MenuItem>
-                    <MenuItem value="lab">Lab</MenuItem>
-                    <MenuItem value="note">Note</MenuItem>
+                  <InputLabel>{t('Record Type', 'የመዝገብ አይነት')}</InputLabel>
+                  <Select label={t('Record Type', 'የመዝገብ አይነት')} value={recordType} onChange={(e) => setRecordType(String(e.target.value))}>
+                    <MenuItem value="diagnosis">{t('Diagnosis', 'ምርመራ')}</MenuItem>
+                    <MenuItem value="prescription">{t('Prescription', 'የመድሀኒት ትዕዛዝ')}</MenuItem>
+                    <MenuItem value="lab">{t('Lab', 'ላብ')}</MenuItem>
+                    <MenuItem value="note">{t('Note', 'ማስታወሻ')}</MenuItem>
                   </Select>
                 </FormControl>
                 <TextField
                   fullWidth
-                  label="Record Date (optional)"
+                  label={t('Record Date (optional)', 'የመዝገብ ቀን (አማራጭ)')}
                   type="date"
                   value={recordDate}
                   onChange={(e) => setRecordDate(e.target.value)}
@@ -540,12 +541,12 @@ export const ProfessionalDashboard: React.FC = () => {
                 fullWidth
                 multiline
                 minRows={4}
-                label='Record JSON (e.g. {"summary":"Follow-up","details":"..."} )'
+                label={t('Record JSON (e.g. {"summary":"Follow-up","details":"..."} )', 'የመዝገብ JSON (ለምሳሌ {"summary":"Follow-up","details":"..."} )')}
                 value={recordPayload}
                 onChange={(e) => setRecordPayload(e.target.value)}
               />
               <Button variant="contained" onClick={createRecord}>
-                {isAmharic ? 'መዝገብ አስቀምጥ' : 'SAVE RECORD'}
+                {t('SAVE RECORD', 'መዝገብ አስቀምጥ')}
               </Button>
 
               <Divider />
@@ -555,12 +556,12 @@ export const ProfessionalDashboard: React.FC = () => {
               </Typography>
               <TextField
                 fullWidth
-                label="Record ID"
+                label={t('Record ID', 'የመዝገብ መለያ')}
                 value={updateRecordId}
                 onChange={(e) => setUpdateRecordId(e.target.value)}
               />
               <Button variant="outlined" onClick={updateRecord}>
-                {isAmharic ? 'መዝገብ አሻሽል' : 'UPDATE RECORD'}
+                {t('UPDATE RECORD', 'መዝገብ አሻሽል')}
               </Button>
             </Stack>
           )}
@@ -660,18 +661,18 @@ export const ProfessionalDashboard: React.FC = () => {
                   {isAmharic ? 'የሙያ መረጃ' : 'Professional Profile'}
                 </Typography>
                 <Stack spacing={1}>
-                  <TextField fullWidth label={isAmharic ? 'ስም' : 'Name'} defaultValue={name} />
+                  <TextField fullWidth label={t('Name', 'ስም')} defaultValue={name} />
                   <TextField
                     fullWidth
-                    label={isAmharic ? 'ስፔሻላይዜሽን' : 'Specialization'}
+                    label={t('Specialization', 'ስፔሻላይዜሽን')}
                     defaultValue={isAmharic ? 'አጠቃላይ ሕክምና' : 'General Practice'}
                   />
                   <TextField
                     fullWidth
-                    label={isAmharic ? 'ዲፓርትመንት' : 'Department'}
+                    label={t('Department', 'ዲፓርትመንት')}
                     defaultValue={isAmharic ? 'ውጪ ታካሚ' : 'Outpatient'}
                   />
-                  <TextField fullWidth label={isAmharic ? 'ፈቃድ ቁጥር (read-only)' : 'License (read-only)'} value="MOH-12345" disabled />
+                  <TextField fullWidth label={t('License (read-only)', 'ፈቃድ ቁጥር (ለንባብ ብቻ)')} value="MOH-12345" disabled />
                 </Stack>
               </CardContent>
             </Card>
@@ -684,8 +685,8 @@ export const ProfessionalDashboard: React.FC = () => {
                 </Typography>
                 <Stack spacing={1}>
                   <FormControl fullWidth>
-                    <InputLabel>{isAmharic ? 'የምክክር ጊዜ (ደቂቃ)' : 'Consultation duration (min)'}</InputLabel>
-                    <Select label={isAmharic ? 'የምክክር ጊዜ (ደቂቃ)' : 'Consultation duration (min)'} defaultValue={30}>
+                    <InputLabel>{t('Consultation duration (min)', 'የምክክር ጊዜ (ደቂቃ)')}</InputLabel>
+                    <Select label={t('Consultation duration (min)', 'የምክክር ጊዜ (ደቂቃ)')} defaultValue={30}>
                       <MenuItem value={15}>15</MenuItem>
                       <MenuItem value={30}>30</MenuItem>
                       <MenuItem value={45}>45</MenuItem>
@@ -694,12 +695,12 @@ export const ProfessionalDashboard: React.FC = () => {
                   </FormControl>
                   <TextField
                     fullWidth
-                    label={isAmharic ? 'የስራ ሰዓት (ምሳሌ)' : 'Working hours (example)'}
+                    label={t('Working hours (example)', 'የስራ ሰዓት (ምሳሌ)')}
                     defaultValue={isAmharic ? 'ሰኞ-አርብ 08:00-17:00' : 'Mon–Fri 08:00–17:00'}
                   />
                   <Divider />
                   <Button variant="contained" onClick={handleSaveSettings} disabled={isSavingSettings}>
-                    {isAmharic ? 'አስቀምጥ' : 'Save'}
+                    {t('Save', 'አስቀምጥ')}
                   </Button>
                 </Stack>
               </CardContent>

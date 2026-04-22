@@ -10,21 +10,21 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Drawer,
   Grid,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
   Snackbar,
   Stack,
   Tab,
   Tabs,
   Typography,
 } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUI } from '@/contexts/UIContext';
+import { useDashboardMenu } from '@/features/patient/dashboard/context/DashboardMenuContext';
+import {
+  AdminHamburgerMenu,
+  AdminHamburgerAction,
+} from '@/features/admin/components/AdminHamburgerMenu';
 import { CreateWoredaForm } from '@/components/admin/CreateWoredaForm';
 import { CreateCityForm } from '@/components/admin/CreateCityForm';
 import { AdminsList } from '@/components/admin/AdminsList';
@@ -45,11 +45,14 @@ const defaultStats: ZoneStats = {
 };
 
 export const ZonalDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { language } = useUI();
+  const { menuOpen, closeMenu } = useDashboardMenu();
   const isAmharic = language === 'am';
-  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [mainPanel, setMainPanel] = React.useState<'tabs' | 'settings'>('tabs');
   const [activeTab, setActiveTab] = React.useState(0);
+  const [confirmLogout, setConfirmLogout] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [stats, setStats] = React.useState<ZoneStats>(defaultStats);
   const [woredaAdmins, setWoredaAdmins] = React.useState<AdminRow[]>([]);
@@ -118,6 +121,40 @@ export const ZonalDashboard: React.FC = () => {
     showToast('Temporary password copied.');
   };
 
+  const roleLabel = isAmharic ? 'የዞን አስተዳዳሪ' : 'Zonal Admin';
+
+  const handleAdminMenuSelect = (action: AdminHamburgerAction) => {
+    switch (action) {
+      case 'dashboard':
+        setMainPanel('tabs');
+        setActiveTab(0);
+        break;
+      case 'admin_management':
+        setMainPanel('tabs');
+        setActiveTab(1);
+        break;
+      case 'statistics':
+        setMainPanel('tabs');
+        setActiveTab(0);
+        break;
+      case 'audit':
+        setMainPanel('tabs');
+        setActiveTab(3);
+        break;
+      case 'settings':
+        setMainPanel('settings');
+        break;
+      case 'help':
+        navigate('/help');
+        break;
+      case 'logout':
+        setConfirmLogout(true);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <Box sx={{ px: { xs: 1, md: 2 }, pb: 4 }}>
       <Card
@@ -131,38 +168,26 @@ export const ZonalDashboard: React.FC = () => {
       >
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <IconButton onClick={() => setDrawerOpen(true)} aria-label="menu">
-              <MenuIcon sx={{ color: 'white' }} />
-        </IconButton>
-        <Box>
+            <Box>
               <Typography variant="h5" fontWeight={800}>
-            {isAmharic ? 'የዞን አስተዳዳሪ ዳሽቦርድ' : 'Zonal Admin Dashboard'}
-          </Typography>
+                {isAmharic ? 'የዞን አስተዳዳሪ ዳሽቦርድ' : 'Zonal Admin Dashboard'}
+              </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            {user?.name} ({user?.adminLevel || (isAmharic ? 'ዞን' : 'zonal')})
-          </Typography>
-        </Box>
-      </Box>
+                {user?.name} ({user?.adminLevel || (isAmharic ? 'ዞን' : 'zonal')})
+              </Typography>
+            </Box>
+          </Box>
         </CardContent>
       </Card>
 
-      <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <List sx={{ width: 260 }}>
-          {(isAmharic
-            ? ['ዳሽቦርድ', 'አስተዳዳሪ ፍጠር', 'ዝርዝሮች', 'የቅርብ እንቅስቃሴ']
-            : ['Dashboard', 'Create Admins', 'Lists', 'Recent Activity']).map((item, idx) => (
-            <ListItemButton
-              key={item}
-              onClick={() => {
-                setActiveTab(idx);
-                setDrawerOpen(false);
-              }}
-            >
-              <ListItemText primary={item} />
-            </ListItemButton>
-          ))}
-        </List>
-      </Drawer>
+      <AdminHamburgerMenu
+        variant="zonal"
+        isOpen={menuOpen}
+        onClose={closeMenu}
+        onSelect={handleAdminMenuSelect}
+        userName={user?.name}
+        roleLabel={roleLabel}
+      />
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={3}>
@@ -199,7 +224,24 @@ export const ZonalDashboard: React.FC = () => {
         </Grid>
       </Grid>
 
-      <Tabs value={activeTab} onChange={(_e, val) => setActiveTab(val)} sx={{ mb: 2 }}>
+      {mainPanel === 'settings' && (
+        <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', mb: 2 }}>
+          <CardContent>
+            <Typography variant="subtitle1" fontWeight={900} gutterBottom>
+              {isAmharic ? 'ቅንብሮች' : 'Settings'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {isAmharic
+                ? 'የቅንብር ገጽ እዚህ መጨመር ይቻላል።'
+                : 'Settings UI can be added here (frontend-only).'}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      {mainPanel === 'tabs' && (
+        <>
+      <Tabs value={activeTab} onChange={(_e, val) => { setActiveTab(val); setMainPanel('tabs'); }} sx={{ mb: 2 }}>
         <Tab label={isAmharic ? 'ዳሽቦርድ' : 'Dashboard'} />
         <Tab label={isAmharic ? 'አስተዳዳሪ ፍጠር' : 'Create Admins'} />
         <Tab label={isAmharic ? 'ዝርዝሮች' : 'Lists'} />
@@ -279,9 +321,36 @@ export const ZonalDashboard: React.FC = () => {
 
       {activeTab === 0 && (
         <Alert severity="info">
-          Zonal admins can only view anonymous statistics and cannot access patient-level medical data.
+          {isAmharic
+            ? 'የዞን አስተዳዳሪዎች ስም-አልባ ስታቲስቲክስ ብቻ ያያሉ። የታካሚ የሕክምና መረጃ አይገኝም።'
+            : 'Zonal admins can only view anonymous statistics and cannot access patient-level medical data.'}
         </Alert>
       )}
+        </>
+      )}
+
+      <Dialog open={confirmLogout} onClose={() => setConfirmLogout(false)}>
+        <DialogTitle>{isAmharic ? 'መውጣትን ያረጋግጡ' : 'Confirm Logout'}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            {isAmharic ? 'ከስርዓቱ መውጣት ይፈልጋሉ?' : 'Are you sure you want to log out?'}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmLogout(false)}>{isAmharic ? 'ሰርዝ' : 'Cancel'}</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setConfirmLogout(false);
+              logout();
+              navigate('/');
+            }}
+          >
+            {isAmharic ? 'ውጣ' : 'Logout'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}

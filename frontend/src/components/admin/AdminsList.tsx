@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { AdminRow } from '@/features/admin/services/zonalAdminService';
+import { useUI } from '@/contexts/UIContext';
 
 interface Props {
   rows: AdminRow[];
@@ -20,7 +21,10 @@ interface Props {
 }
 
 export const AdminsList: React.FC<Props> = ({ rows, scope }) => {
-  const locationLabel = scope === 'woreda' ? 'Woreda' : 'City';
+  const { language } = useUI();
+  const isAmharic = language === 'am';
+  const t = (en: string, am: string) => (isAmharic ? am : en);
+  const locationLabel = scope === 'woreda' ? t('Woreda', 'ወረዳ') : t('City', 'ከተማ');
 
   return (
     <TableContainer component={Paper} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
@@ -28,11 +32,11 @@ export const AdminsList: React.FC<Props> = ({ rows, scope }) => {
         <TableHead>
           <TableRow>
             <TableCell>{locationLabel}</TableCell>
-            <TableCell>Admin Name</TableCell>
-            <TableCell>Email</TableCell>
-            <TableCell>Created</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Actions</TableCell>
+            <TableCell>{t('Admin Name', 'የአስተዳዳሪ ስም')}</TableCell>
+            <TableCell>{t('Email', 'ኢሜይል')}</TableCell>
+            <TableCell>{t('Created', 'የተፈጠረበት')}</TableCell>
+            <TableCell>{t('Status', 'ሁኔታ')}</TableCell>
+            <TableCell>{t('Actions', 'እርምጃዎች')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -40,7 +44,7 @@ export const AdminsList: React.FC<Props> = ({ rows, scope }) => {
             <TableRow>
               <TableCell colSpan={6}>
                 <Typography variant="body2" color="text.secondary">
-                  No admins found.
+                  {t('No admins found.', 'አስተዳዳሪ አልተገኘም።')}
                 </Typography>
               </TableCell>
             </TableRow>
@@ -52,13 +56,13 @@ export const AdminsList: React.FC<Props> = ({ rows, scope }) => {
                 <TableCell>{row.email}</TableCell>
                 <TableCell>{new Date(row.created_at).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  <Chip size="small" color={row.is_active ? 'success' : 'default'} label={row.is_active ? 'Active' : 'Suspended'} />
+                  <Chip size="small" color={row.is_active ? 'success' : 'default'} label={row.is_active ? t('Active', 'ንቁ') : t('Suspended', 'የታገደ')} />
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                    <Button size="small" variant="outlined">Edit</Button>
-                    <Button size="small" variant="outlined" color="warning">Suspend</Button>
-                    <Button size="small" variant="outlined" color="secondary">Reset Password</Button>
+                    <Button size="small" variant="outlined">{t('Edit', 'አስተካክል')}</Button>
+                    <Button size="small" variant="outlined" color="warning">{t('Suspend', 'አግድ')}</Button>
+                    <Button size="small" variant="outlined" color="secondary">{t('Reset Password', 'የይለፍ ቃል ዳግም አዘጋጅ')}</Button>
                   </Box>
                 </TableCell>
               </TableRow>
