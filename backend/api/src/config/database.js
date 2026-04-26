@@ -20,9 +20,30 @@ function getPool() {
     if (!connectionString) {
       throw new Error('DATABASE_URL is required');
     }
+
+    // Render Postgres commonly requires SSL and may present a cert chain that
+    // Node won't validate by default in managed environments.
+    // Allow overriding via env, but default to secure local dev (no SSL) and
+    // permissive SSL in production to avoid "self-signed certificate" crashes.
+    const nodeEnv = String(process.env.NODE_ENV || '').toLowerCase();
+    const forceSsl =
+      String(process.env.PGSSL || '').toLowerCase() === 'true' ||
+      connectionString.includes('sslmode=require') ||
+      connectionString.includes('sslmode=verify-full') ||
+      nodeEnv === 'production';
+
+    const rejectUnauthorizedEnv = String(process.env.PGSSL_REJECT_UNAUTHORIZED || '').toLowerCase();
+    const rejectUnauthorized =
+      rejectUnauthorizedEnv === 'true'
+        ? true
+        : rejectUnauthorizedEnv === 'false'
+          ? false
+          : nodeEnv !== 'production';
+
     poolInstance = new Pool({
       connectionString,
       max: Number(process.env.DATABASE_POOL_SIZE || 20),
+      ...(forceSsl ? { ssl: { rejectUnauthorized } } : {}),
     });
   }
   return poolInstance;
