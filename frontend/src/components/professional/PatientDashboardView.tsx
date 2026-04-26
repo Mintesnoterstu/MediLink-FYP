@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Card, CardContent, Grid, Alert, Stack, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, Alert, Stack, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { professionalDataService } from '@/features/professional/services/professionalDataService';
 import { PatientDataForm } from './PatientDataForm';
@@ -35,6 +35,60 @@ export const PatientDashboardView: React.FC = () => {
   };
 
   const records = Array.isArray(data?.records) ? data.records : [];
+  const humanizeLabel = (key: string) =>
+    key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim();
+
+  const renderSection = (title: string, section: any) => {
+    if (!section || typeof section !== 'object') return null;
+    const entries = Object.entries(section).filter(([, v]) => String(v ?? '').trim() !== '');
+    if (entries.length === 0) return null;
+    return (
+      <Box>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+          {title}
+        </Typography>
+        {entries.map(([k, v]) => (
+          <Typography key={k} variant="body2" sx={{ mb: 0.25 }}>
+            <strong>{humanizeLabel(k)}:</strong> {String(v)}
+          </Typography>
+        ))}
+      </Box>
+    );
+  };
+
+  const renderStructuredBlock = (recordData: any) => {
+    if (!recordData || typeof recordData !== 'object') {
+      return <Typography variant="body2" color="text.secondary">No clinical details available.</Typography>;
+    }
+
+    const soapKeys = ['subjective', 'objective', 'assessment', 'plan'];
+    const otherEntries = Object.entries(recordData).filter(([k]) => !soapKeys.includes(k) && k !== 'attachments');
+
+    return (
+      <Stack spacing={1.25}>
+        {renderSection('Subjective', recordData.subjective)}
+        {renderSection('Objective', recordData.objective)}
+        {renderSection('Assessment', recordData.assessment)}
+        {renderSection('Plan', recordData.plan)}
+        {otherEntries.length > 0 ? (
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+              Additional Details
+            </Typography>
+            {otherEntries.map(([k, v]) => (
+              <Typography key={k} variant="body2" sx={{ mb: 0.25 }}>
+                <strong>{humanizeLabel(k)}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+              </Typography>
+            ))}
+          </Box>
+        ) : null}
+      </Stack>
+    );
+  };
 
   return (
     <Box>
@@ -129,12 +183,11 @@ export const PatientDashboardView: React.FC = () => {
               <Typography variant="body2"><strong>Date:</strong> {selectedRecord.record_date ? new Date(selectedRecord.record_date).toLocaleDateString() : new Date(selectedRecord.created_at).toLocaleDateString()}</Typography>
               <Typography variant="body2"><strong>Doctor:</strong> {selectedRecord.created_by_name || '-'}</Typography>
               <Typography variant="body2"><strong>Facility:</strong> {selectedRecord.facility_name || '-'}</Typography>
-              <TextField
-                multiline
-                minRows={8}
-                value={JSON.stringify(selectedRecord.data || {}, null, 2)}
-                InputProps={{ readOnly: true }}
-              />
+              <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                <CardContent sx={{ py: 1.5 }}>
+                  {renderStructuredBlock(selectedRecord.data)}
+                </CardContent>
+              </Card>
               {Array.isArray(selectedRecord?.data?.attachments) && selectedRecord.data.attachments.length > 0 && (
                 <Stack spacing={0.5}>
                   <Typography variant="subtitle2">Attachments</Typography>

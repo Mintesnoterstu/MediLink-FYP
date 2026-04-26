@@ -121,6 +121,44 @@ export const MyRecordsPage: React.FC = () => {
     );
   };
 
+  const renderStructuredBlock = (data: any) => {
+    if (!data || typeof data !== 'object') {
+      return <Typography variant="body2" color="text.secondary">No clinical details available.</Typography>;
+    }
+
+    const soapKeys = ['subjective', 'objective', 'assessment', 'plan'];
+    const hasSoap = soapKeys.some((k) => data[k] && typeof data[k] === 'object');
+    const otherEntries = Object.entries(data).filter(([k]) => !soapKeys.includes(k) && k !== 'attachments');
+
+    return (
+      <Stack spacing={1.25}>
+        {hasSoap ? (
+          <>
+            {renderSoapSection('Subjective (What patient says)', data.subjective)}
+            {renderSoapSection('Objective (Clinical findings)', data.objective)}
+            {renderSoapSection('Assessment (Diagnosis)', data.assessment)}
+            {renderSoapSection('Plan (Treatment and follow-up)', data.plan)}
+          </>
+        ) : null}
+        {otherEntries.length > 0 ? (
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+              Additional Details
+            </Typography>
+            {otherEntries.map(([k, v]) => (
+              <Typography key={k} variant="body2" sx={{ mb: 0.25 }}>
+                <strong>{humanizeLabel(k)}:</strong> {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+              </Typography>
+            ))}
+          </Box>
+        ) : null}
+        {!hasSoap && otherEntries.length === 0 ? (
+          <Typography variant="body2" color="text.secondary">No clinical details available.</Typography>
+        ) : null}
+      </Stack>
+    );
+  };
+
   return (
     <Box>
       <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
@@ -220,26 +258,11 @@ export const MyRecordsPage: React.FC = () => {
               <Typography variant="body2"><strong>Date:</strong> {selected.record_date ? new Date(selected.record_date).toLocaleDateString() : new Date(selected.created_at).toLocaleDateString()}</Typography>
               <Typography variant="body2"><strong>Doctor:</strong> {selected.created_by_name || '-'}</Typography>
               <Typography variant="body2"><strong>Facility:</strong> {selected.facility_name || '-'}</Typography>
-              <TextField
-                multiline
-                minRows={8}
-                value={(() => {
-                  const d = selected.data || {};
-                  if (d && typeof d === 'object' && (d.subjective || d.objective || d.assessment || d.plan)) {
-                    return 'Patient-friendly SOAP view is shown below.';
-                  }
-                  return JSON.stringify(d, null, 2);
-                })()}
-                InputProps={{ readOnly: true }}
-              />
-              {selected?.data && (selected.data.subjective || selected.data.objective || selected.data.assessment || selected.data.plan) && (
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {renderSoapSection('Subjective (What patient says)', selected.data.subjective)}
-                  {renderSoapSection('Objective (Clinical findings)', selected.data.objective)}
-                  {renderSoapSection('Assessment (Diagnosis)', selected.data.assessment)}
-                  {renderSoapSection('Plan (Treatment and follow-up)', selected.data.plan)}
-                </Stack>
-              )}
+              <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                <CardContent sx={{ py: 1.5 }}>
+                  {renderStructuredBlock(selected.data)}
+                </CardContent>
+              </Card>
               {Array.isArray(selected?.data?.attachments) && selected.data.attachments.length > 0 && (
                 <Stack spacing={0.5}>
                   <Typography variant="subtitle2">Attachments</Typography>

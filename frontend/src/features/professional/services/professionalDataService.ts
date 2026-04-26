@@ -45,6 +45,11 @@ export const professionalDataService = {
     return response.data;
   },
 
+  async cancelPendingConsentRequest(requestId: string) {
+    const response = await apiClient.delete(`/professional/consents/pending/${requestId}`);
+    return response.data;
+  },
+
   async getPatientDataWithConsent(patientId: string) {
     const response = await apiClient.get(`/professional/patient/${patientId}`);
     return response.data;

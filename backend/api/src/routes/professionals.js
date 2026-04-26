@@ -161,6 +161,28 @@ router.get('/consents/pending', authRequired, requireRole('doctor', 'nurse'), as
   }
 });
 
+router.delete('/consents/pending/:requestId', authRequired, requireRole('doctor', 'nurse'), async (req, res, next) => {
+  try {
+    const deleted = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        DELETE FROM consent_requests
+        WHERE id = $1
+          AND doctor_id = $2
+          AND status = 'pending'
+        RETURNING id
+      `,
+        [req.params.requestId, req.user.id],
+      );
+      return r.rows[0] || null;
+    });
+    if (!deleted) return res.status(404).json({ error: 'Pending consent request not found' });
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.get('/patients', authRequired, requireRole('doctor', 'nurse'), async (req, res, next) => {
   try {
     const rows = await withRequestSession(req, async (client) => {

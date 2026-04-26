@@ -39,7 +39,6 @@ import { useUI } from '@/contexts/UIContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '@/features/auth/services/authService';
 import { professionalDataService, ProfessionalPatientSearchResult } from '@/features/professional/services/professionalDataService';
-import { apiClient } from '@/services/apiClient';
 import { Snackbar, Alert } from '@mui/material';
 
 export const ProfessionalDashboard: React.FC = () => {
@@ -152,11 +151,12 @@ export const ProfessionalDashboard: React.FC = () => {
 
   const cancelRequest = async (requestId: string) => {
     try {
-      // minimal: mark as rejected by deleting is not supported in backend; so just inform for now
-      await apiClient.put(`/professionals/consents/request/${requestId}`, { status: 'cancelled' }).catch(() => null);
-      setToast({ open: true, severity: 'info', message: 'Cancel is not implemented on backend yet.' });
-    } catch {
-      setToast({ open: true, severity: 'info', message: 'Cancel is not implemented on backend yet.' });
+      await professionalDataService.cancelPendingConsentRequest(requestId);
+      setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setToast({ open: true, severity: 'success', message: 'Consent request cancelled.' });
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || e?.message || 'Failed to cancel request';
+      setToast({ open: true, severity: 'error', message: msg });
     }
   };
 
