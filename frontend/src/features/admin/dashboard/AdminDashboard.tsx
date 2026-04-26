@@ -279,6 +279,8 @@ export const AdminDashboard: React.FC = () => {
     setPatientForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const printPage = () => window.print();
+
   const resetPatientForm = () => {
     setPatientForm({
       fullName: '',
@@ -789,7 +791,17 @@ export const AdminDashboard: React.FC = () => {
                       value={patientForm.phone}
                       onChange={(e) => handlePatientFormChange('phone', e.target.value)}
                     />
-                    <Button variant="outlined">
+                    <Button
+                      variant="outlined"
+                      onClick={() =>
+                        toast(
+                          'info',
+                          isAmharic
+                            ? 'የስልክ ማረጋገጫ በ2FA (OTP) ግቤት ውስጥ ይከናወናል።'
+                            : 'Phone verification is handled in the 2FA (OTP) login flow.',
+                        )
+                      }
+                    >
                       {isAmharic ? 'ስልክ አረጋግጥ' : 'VERIFY PHONE'}
                     </Button>
                   </Box>
@@ -1001,17 +1013,28 @@ export const AdminDashboard: React.FC = () => {
               </Typography>
 
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 2 }}>
-                <Button size="small" variant="outlined">
+                <Button size="small" variant="outlined" onClick={printPage}>
                   {isAmharic
                     ? '🖨️ የጤና መታወቂያ ካርድ አትም'
                     : '🖨️ PRINT HEALTH ID CARD'}
                 </Button>
-                <Button size="small" variant="outlined">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() =>
+                    toast(
+                      'info',
+                      isAmharic
+                        ? 'ይህ የምሳሌ ካርድ ነው። የታካሚ መገለጫ ከ"Patients List" ውስጥ ይከፈታል።'
+                        : 'This card is a demo. Patient profile should be opened from the Patients List.',
+                    )
+                  }
+                >
                   {isAmharic
                     ? '👤 የታካሚ መገለጫ ተመልከት'
                     : '👤 VIEW PATIENT PROFILE'}
                 </Button>
-                <Button size="small" variant="contained">
+                <Button size="small" variant="contained" onClick={() => toast('info', isAmharic ? 'ከላይ ያለውን ቅጽ ይጠቀሙ።' : 'Use the registration form above.')}>
                   {isAmharic
                     ? '📋 አዲስ ታካሚ መዝግብ'
                     : '📋 REGISTER NEW PATIENT'}

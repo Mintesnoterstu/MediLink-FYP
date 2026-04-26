@@ -15,6 +15,7 @@ import {
   Chip,
   Switch,
   FormControlLabel,
+  Alert,
 } from '@mui/material';
 import { Brightness4, Brightness7 } from '@mui/icons-material';
 import { useUI } from '@/contexts/UIContext';
@@ -27,6 +28,24 @@ export const ProfilePage: React.FC = () => {
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [message, setMessage] = React.useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profile, setProfile] = React.useState<any | null>(null);
+  const [loading, setLoading] = React.useState(false);
+
+  const load = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await apiClient.get('/patient/me');
+      setProfile(res.data || null);
+    } catch {
+      setProfile(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
 
   const changePassword = async () => {
     try {
@@ -81,11 +100,19 @@ export const ProfilePage: React.FC = () => {
           <Typography variant="h6" fontWeight={800} sx={{ mb: 1 }}>
             {isAmharic ? 'የግል መረጃ (ለእይታ ብቻ)' : 'Personal Information (View only)'}
           </Typography>
+          {loading ? <Alert severity="info" sx={{ mb: 1 }}>{isAmharic ? 'በመጫን ላይ...' : 'Loading...'}</Alert> : null}
           <Typography variant="body2" color="text.secondary">
             {isAmharic
               ? 'ታካሚዎች የግል መረጃቸውን በቀጥታ ማስተካከል አይችሉም። ማስተካከያ ለመጠየቅ ከፋሲሊቲ አድሚን ጋር ያነጋግሩ።'
               : 'Patients cannot edit personal information directly. Contact your facility admin to request corrections.'}
           </Typography>
+          {profile ? (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <strong>{isAmharic ? 'ስም፡ ' : 'Name: '}</strong>{profile.fullName || '-'}
+              {' · '}
+              <strong>{isAmharic ? 'መታወቂያ፡ ' : 'Health ID: '}</strong>{profile.ethiopianHealthId || '-'}
+            </Typography>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -103,33 +130,33 @@ export const ProfilePage: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {[
-                {
-                  enField: 'Name',
-                  amField: 'ስም',
-                  value: 'Tekle Kebede',
-                },
-                {
-                  enField: 'Relationship',
-                  amField: 'ዝምድና',
-                  value: 'Brother',
-                },
-                {
-                  enField: 'Phone',
-                  amField: 'ስልክ',
-                  value: '0911-234-567',
-                },
-                {
-                  enField: 'Alternative Phone',
-                  amField: 'ተለዋጭ ስልክ',
-                  value: '0912-345-678',
-                },
-              ].map((r) => (
+              {(() => {
+                const ec = profile?.encryptedData?.emergencyContact || profile?.encryptedData?.emergency_contact || null;
+                const name = ec?.name || '-';
+                const relation = ec?.relation || '-';
+                const phone = ec?.phone || '-';
+                const rows = [
+                  { enField: 'Name', amField: 'ስም', value: name },
+                  { enField: 'Relationship', amField: 'ዝምድና', value: relation },
+                  { enField: 'Phone', amField: 'ስልክ', value: phone },
+                ];
+                return rows;
+              })().map((r) => (
                 <TableRow key={r.enField}>
                   <TableCell>{isAmharic ? r.amField : r.enField}</TableCell>
                   <TableCell>{r.value}</TableCell>
                   <TableCell>
-                    <Button size="small">
+                    <Button
+                      size="small"
+                      onClick={() =>
+                        setMessage({
+                          type: 'error',
+                          text: isAmharic
+                            ? 'ማስተካከያ ለመጠየቅ ከፋሲሊቲ አድሚን ጋር ያነጋግሩ።'
+                            : 'Contact your facility admin to request updates.',
+                        })
+                      }
+                    >
                       {isAmharic ? 'አዘምን' : 'Update'}
                     </Button>
                   </TableCell>
@@ -191,17 +218,36 @@ export const ProfilePage: React.FC = () => {
                   ? 'የድንገተኛ መዳረሻ ሁነታ — በድንገተኛ አደጋ ጊዜ ማንኛውም ሐኪም ለ24 ሰዓት አስፈላጊ መረጃዎን እንዲያይ ይፈቅዳል።'
                   : 'Emergency Access Mode — Allows ANY doctor to see your critical information for 24 hours.'}
               </Typography>
-              <Chip label={isAmharic ? 'ጠፍቷል' : 'OFF'} />
-              <Button size="small" variant="contained">
-                {isAmharic ? 'አንቃ' : 'ACTIVATE'}
+              <Chip label={(profile?.isEmergencyFlag ? (isAmharic ? 'በሥራ ላይ' : 'ON') : (isAmharic ? 'ጠፍቷል' : 'OFF'))} />
+              <Button
+                size="small"
+                variant="contained"
+                onClick={async () => {
+                  try {
+                    if (!profile?.id) return;
+                    await apiClient.patch(`/patient/${profile.id}`, { isEmergencyFlag: !Boolean(profile.isEmergencyFlag) });
+                    await load();
+                    setMessage({
+                      type: 'success',
+                      text: isAmharic ? 'ተቀይሯል።' : 'Updated.',
+                    });
+                  } catch (e: any) {
+                    setMessage({
+                      type: 'error',
+                      text: e?.response?.data?.error || (isAmharic ? 'ማዘመን አልተሳካም።' : 'Failed to update.'),
+                    });
+                  }
+                }}
+              >
+                {profile?.isEmergencyFlag ? (isAmharic ? 'አጥፋ' : 'DEACTIVATE') : (isAmharic ? 'አንቃ' : 'ACTIVATE')}
               </Button>
             </Box>
             <Divider />
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Typography variant="body2">
                 {isAmharic
-                  ? 'የድንገተኛ አደጋ መጠናኛ — ተክሌ ከበደ - 0911-234-567'
-                  : 'Emergency Contact — Tekle Kebede - 0911-234-567'}
+                  ? `የድንገተኛ አደጋ መጠናኛ — ${profile?.encryptedData?.emergencyContact?.name || '-'} - ${profile?.encryptedData?.emergencyContact?.phone || '-'}`
+                  : `Emergency Contact — ${profile?.encryptedData?.emergencyContact?.name || '-'} - ${profile?.encryptedData?.emergencyContact?.phone || '-'}`}
               </Typography>
               <Button size="small">
                 {isAmharic ? 'አዘምን' : 'Update'}

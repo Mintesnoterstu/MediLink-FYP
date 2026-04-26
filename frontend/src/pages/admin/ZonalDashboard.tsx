@@ -294,13 +294,13 @@ export const ZonalDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Woreda Admins</Typography>
-              <AdminsList rows={woredaAdmins} scope="woreda" />
+              <AdminsList rows={woredaAdmins} scope="woreda" onChanged={loadData} />
             </CardContent>
           </Card>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>City Admin</Typography>
-              <AdminsList rows={cityAdmins} scope="city" />
+              <AdminsList rows={cityAdmins} scope="city" onChanged={loadData} />
             </CardContent>
           </Card>
         </Stack>

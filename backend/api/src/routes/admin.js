@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import Joi from 'joi';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
 import { authRequired } from '../middleware/auth.js';
 import { requireRole } from '../middleware/rbac.js';
@@ -269,6 +270,105 @@ router.put(
         await client.query('UPDATE users SET is_active = false WHERE id = $1', [userId]);
       });
       return res.json({ success: true });
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+const updateUserSchema = Joi.object({
+  fullName: Joi.string().min(2).optional(),
+  phone: Joi.string().min(8).allow('', null).optional(),
+  // keep email immutable here to avoid breaking login + uniqueness issues in demos
+});
+
+router.put(
+  '/users/:id',
+  authRequired,
+  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  validateBody(updateUserSchema),
+  async (req, res, next) => {
+    try {
+      const userId = req.params.id;
+      const b = req.validatedBody || {};
+      const updated = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+        const r = await client.query(
+          `
+          UPDATE users
+          SET
+            full_name = COALESCE($2, full_name),
+            phone = COALESCE($3, phone),
+            updated_at = now()
+          WHERE id = $1
+          RETURNING id, email, phone, full_name, role, is_active, created_at
+        `,
+          [userId, b.fullName || null, b.phone ?? null],
+        );
+        return r.rows[0] || null;
+      });
+      if (!updated) return res.status(404).json({ error: 'User not found' });
+      return res.json(updated);
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+const statusSchema = Joi.object({
+  isActive: Joi.boolean().required(),
+});
+
+router.put(
+  '/users/:id/status',
+  authRequired,
+  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  validateBody(statusSchema),
+  async (req, res, next) => {
+    try {
+      const userId = req.params.id;
+      const updated = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+        const r = await client.query(
+          `
+          UPDATE users
+          SET is_active = $2, updated_at = now()
+          WHERE id = $1
+          RETURNING id, is_active
+        `,
+          [userId, req.validatedBody.isActive],
+        );
+        return r.rows[0] || null;
+      });
+      if (!updated) return res.status(404).json({ error: 'User not found' });
+      return res.json({ success: true, user: updated });
+    } catch (err) {
+      return next(err);
+    }
+  },
+);
+
+router.post(
+  '/users/:id/reset-password',
+  authRequired,
+  requireRole('zonal_admin', 'woreda_admin', 'city_admin', 'facility_admin'),
+  async (req, res, next) => {
+    try {
+      const userId = req.params.id;
+      const tempPassword = crypto.randomBytes(6).toString('base64url'); // short, human-shareable
+      const hash = await bcrypt.hash(tempPassword, 10);
+      const updated = await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
+        const r = await client.query(
+          `
+          UPDATE users
+          SET password_hash = $2, must_change_password = true, updated_at = now()
+          WHERE id = $1
+          RETURNING id, email, full_name
+        `,
+          [userId, hash],
+        );
+        return r.rows[0] || null;
+      });
+      if (!updated) return res.status(404).json({ error: 'User not found' });
+      return res.json({ success: true, tempPassword, user: updated });
     } catch (err) {
       return next(err);
     }

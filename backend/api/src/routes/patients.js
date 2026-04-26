@@ -188,6 +188,7 @@ router.get('/me', authRequired, async (req, res, next) => {
       ethiopianHealthId: row.ethiopian_health_id,
       dateOfBirth: row.date_of_birth,
       gender: row.gender,
+      isEmergencyFlag: Boolean(row.is_emergency_flag),
       facilityId: row.facility_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

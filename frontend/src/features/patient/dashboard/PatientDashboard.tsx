@@ -4,6 +4,7 @@ import { LocalHospital, Phone } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { useUI } from '@/contexts/UIContext';
+import { apiClient } from '@/services/apiClient';
 import { useDashboardMenu } from './context/DashboardMenuContext';
 import { PatientSectionId } from './types';
 import { HamburgerMenu } from './components/HamburgerMenu';
@@ -63,8 +64,22 @@ export const PatientDashboard: React.FC = () => {
   const { menuOpen, closeMenu } = useDashboardMenu();
 
   const isAmharic = language === 'am';
-  const patientName = user?.name || '[Name]';
-  const healthId = 'ETH-2026-0115-AB123';
+  const [patientName, setPatientName] = useState<string>(user?.name || '');
+  const [healthId, setHealthId] = useState<string>('');
+
+  React.useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await apiClient.get('/patient/profile');
+        const p = res.data || {};
+        if (p.fullName) setPatientName(String(p.fullName));
+        if (p.ethiopianHealthId) setHealthId(String(p.ethiopianHealthId));
+      } catch {
+        // If profile fails, keep auth context fallback values.
+      }
+    };
+    void loadProfile();
+  }, []);
 
   const sectionTitle = (() => {
     switch (activeSection) {
@@ -148,7 +163,7 @@ export const PatientDashboard: React.FC = () => {
                 sx={{ fontSize: { xs: '0.95rem', md: '1rem' } }}
               >
                 {isAmharic ? 'እንኳን ደህና መጡ፣ ' : 'Welcome, '}
-                <strong>{patientName}</strong>
+                <strong>{patientName || user?.name || '-'}</strong>
               </Typography>
               <Typography
                 variant="body2"
@@ -156,7 +171,7 @@ export const PatientDashboard: React.FC = () => {
                 sx={{ fontSize: { xs: '0.85rem', md: '0.9rem' } }}
               >
                 {isAmharic ? 'የኢትዮጵያ የጤና መታወቂያ፡ ' : 'Ethiopian Health ID: '}
-                <strong>{healthId}</strong>
+                <strong>{healthId || '-'}</strong>
               </Typography>
             </Box>
           </Box>

@@ -588,9 +588,18 @@ export const ProfessionalDashboard: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   {isAmharic ? 'ምክንያት፡ ተከታታይ ሕክምና' : 'Reason: Follow-up treatment'}
                 </Typography>
-                <Button variant="contained" size="small">
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => setToast({ open: true, severity: 'info', message: 'Open a patient from “My Patients” to view their dashboard.' })}
+                >
                   {isAmharic ? 'ታካሚ ዳሽቦርድ ክፈት' : 'OPEN PATIENT DASHBOARD'}
                 </Button>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  {isAmharic
+                    ? 'ማስታወሻ፡ ይህ የምሳሌ ካርድ ነው። ከ"My Patients" ውስጥ ታካሚ ምረጥ።'
+                    : 'Note: This is a demo card. Open a real patient from “My Patients”.'}
+                </Typography>
               </CardContent>
             </Card>
           </Grid>
