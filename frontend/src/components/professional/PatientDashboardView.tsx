@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Typography, Card, CardContent, Grid, Alert } from '@mui/material';
+import { Box, Typography, Card, CardContent, Grid, Alert, Stack, Chip, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { professionalDataService } from '@/features/professional/services/professionalDataService';
 import { PatientDataForm } from './PatientDataForm';
@@ -10,6 +10,7 @@ export const PatientDashboardView: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState<any>(null);
   const [message, setMessage] = React.useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+  const [selectedRecord, setSelectedRecord] = React.useState<any | null>(null);
 
   const load = React.useCallback(async () => {
     if (!patientId) return;
@@ -34,9 +35,6 @@ export const PatientDashboardView: React.FC = () => {
   };
 
   const records = Array.isArray(data?.records) ? data.records : [];
-  const medicalHistory = records.filter((r: any) => r.record_type === 'diagnosis' || r.record_type === 'note');
-  const medications = records.filter((r: any) => r.record_type === 'prescription');
-  const labs = records.filter((r: any) => r.record_type === 'lab');
 
   return (
     <Box>
@@ -69,47 +67,37 @@ export const PatientDashboardView: React.FC = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
-                Medical History
+                Existing Records (Read Only)
               </Typography>
-              {medicalHistory.slice(0, 8).map((r: any) => (
-                <Typography key={r.id} variant="body2" sx={{ mb: 0.5 }}>
-                  • {r.record_date ? new Date(r.record_date).toLocaleDateString() : new Date(r.created_at).toLocaleDateString()} - {r.record_type}
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
-                Current Medications
-              </Typography>
-              {medications.slice(0, 8).map((r: any) => (
-                <Typography key={r.id} variant="body2" sx={{ mb: 0.5 }}>
-                  • {r.data?.medication || 'Medication'} - {r.data?.dosage || '-'}
-                </Typography>
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={6}>
-          <Card sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-            <CardContent>
-              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
-                Lab Results
-              </Typography>
-              {labs.slice(0, 8).map((r: any) => (
-                <Typography key={r.id} variant="body2" sx={{ mb: 0.5 }}>
-                  • {r.data?.test_name || 'Lab'} - {r.data?.result || 'Pending'}
-                </Typography>
-              ))}
+              <Grid container spacing={1.5}>
+                {records.slice(0, 12).map((r: any) => (
+                  <Grid item xs={12} md={6} key={r.id}>
+                    <Card variant="outlined">
+                      <CardContent sx={{ py: 1.25 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
+                          <Typography variant="subtitle2" fontWeight={700}>{String(r.record_type || '').replace(/_/g, ' ')}</Typography>
+                          <Chip size="small" label={String(r.status || '').toUpperCase()} />
+                        </Stack>
+                        <Typography variant="body2">Date: {r.record_date ? new Date(r.record_date).toLocaleDateString() : new Date(r.created_at).toLocaleDateString()}</Typography>
+                        <Typography variant="body2">Doctor: {r.created_by_name || '-'}</Typography>
+                        <Typography variant="body2">Facility: {r.facility_name || '-'}</Typography>
+                        <Button size="small" variant="outlined" sx={{ mt: 1 }} onClick={() => setSelectedRecord(r)}>
+                          View Detail
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+                {records.length === 0 && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">No records yet.</Typography>
+                  </Grid>
+                )}
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
@@ -131,6 +119,39 @@ export const PatientDashboardView: React.FC = () => {
           </Alert>
         </Grid>
       </Grid>
+
+      <Dialog open={Boolean(selectedRecord)} onClose={() => setSelectedRecord(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Record Detail</DialogTitle>
+        <DialogContent>
+          {selectedRecord ? (
+            <Stack spacing={1} sx={{ mt: 1 }}>
+              <Typography variant="body2"><strong>Type:</strong> {String(selectedRecord.record_type || '').replace(/_/g, ' ')}</Typography>
+              <Typography variant="body2"><strong>Date:</strong> {selectedRecord.record_date ? new Date(selectedRecord.record_date).toLocaleDateString() : new Date(selectedRecord.created_at).toLocaleDateString()}</Typography>
+              <Typography variant="body2"><strong>Doctor:</strong> {selectedRecord.created_by_name || '-'}</Typography>
+              <Typography variant="body2"><strong>Facility:</strong> {selectedRecord.facility_name || '-'}</Typography>
+              <TextField
+                multiline
+                minRows={8}
+                value={JSON.stringify(selectedRecord.data || {}, null, 2)}
+                InputProps={{ readOnly: true }}
+              />
+              {Array.isArray(selectedRecord?.data?.attachments) && selectedRecord.data.attachments.length > 0 && (
+                <Stack spacing={0.5}>
+                  <Typography variant="subtitle2">Attachments</Typography>
+                  {selectedRecord.data.attachments.map((a: any, idx: number) => (
+                    <a key={`${a?.name || 'file'}-${idx}`} href={a?.dataUrl} download={a?.name || `attachment-${idx + 1}`}>
+                      {a?.name || `Attachment ${idx + 1}`}
+                    </a>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectedRecord(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

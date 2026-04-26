@@ -28,9 +28,11 @@ export const AccessHistoryPage: React.FC = () => {
     const onRefresh = () => load();
     window.addEventListener('focus', onRefresh);
     window.addEventListener('patient-dashboard-updated', onRefresh as EventListener);
+    const interval = window.setInterval(onRefresh, 10000);
     return () => {
       window.removeEventListener('focus', onRefresh);
       window.removeEventListener('patient-dashboard-updated', onRefresh as EventListener);
+      window.clearInterval(interval);
     };
   }, [load]);
 

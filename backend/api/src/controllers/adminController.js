@@ -199,6 +199,8 @@ export async function createWoredaAdmin(req, res, next) {
       };
     });
 
+    let emailDelivered = true;
+    let emailError = null;
     try {
       await sendAdminAccountCreatedEmail({
         toEmail: email,
@@ -209,16 +211,12 @@ export async function createWoredaAdmin(req, res, next) {
         recoveryEmail,
       });
     } catch (err) {
-      logger.warn('Failed to send woreda admin account email, rolling back user', {
+      logger.warn('Failed to send woreda admin account email; user kept and email marked failed', {
         toEmail: email,
         error: err?.message || 'Email delivery failed',
       });
-      await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
-        await client.query('DELETE FROM users WHERE id = $1', [created.user.id]);
-      });
-      const e = new Error('Failed to send email. User was not created. Check SMTP and try again.');
-      e.status = 502;
-      throw e;
+      emailDelivered = false;
+      emailError = err?.message || 'Email delivery failed';
     }
 
     await logAdminAction({
@@ -237,8 +235,8 @@ export async function createWoredaAdmin(req, res, next) {
     return res.status(201).json({
       ...created.user,
       temporaryPassword: tempPassword,
-      emailDelivered: true,
-      emailError: null,
+      emailDelivered,
+      emailError,
     });
   } catch (err) {
     return next(mapCreateAdminError(err));
@@ -310,6 +308,8 @@ export async function createCityAdmin(req, res, next) {
       return insertResult.rows[0];
     });
 
+    let emailDelivered = true;
+    let emailError = null;
     try {
       await sendAdminAccountCreatedEmail({
         toEmail: email,
@@ -320,16 +320,12 @@ export async function createCityAdmin(req, res, next) {
         recoveryEmail,
       });
     } catch (err) {
-      logger.warn('Failed to send city admin account email, rolling back user', {
+      logger.warn('Failed to send city admin account email; user kept and email marked failed', {
         toEmail: email,
         error: err?.message || 'Email delivery failed',
       });
-      await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
-        await client.query('DELETE FROM users WHERE id = $1', [created.id]);
-      });
-      const e = new Error('Failed to send email. User was not created. Check SMTP and try again.');
-      e.status = 502;
-      throw e;
+      emailDelivered = false;
+      emailError = err?.message || 'Email delivery failed';
     }
 
     await logAdminAction({
@@ -348,8 +344,8 @@ export async function createCityAdmin(req, res, next) {
     return res.status(201).json({
       ...created,
       temporaryPassword: tempPassword,
-      emailDelivered: true,
-      emailError: null,
+      emailDelivered,
+      emailError,
     });
   } catch (err) {
     return next(mapCreateAdminError(err));
@@ -449,6 +445,8 @@ export async function createFacilityAdmin(req, res, next) {
       };
     });
 
+    let emailDelivered = true;
+    let emailError = null;
     try {
       await sendFacilityAdminAccountCreatedEmail({
         toEmail: adminEmail,
@@ -459,13 +457,12 @@ export async function createFacilityAdmin(req, res, next) {
         areaName: created.actor.role === 'city_admin' ? JIMMA_CITY : 'Woreda',
       });
     } catch (err) {
-      await withMedilinkSession({ userId: null, role: 'service_role' }, async (client) => {
-        await client.query('DELETE FROM facilities WHERE id = $1', [created.facility.id]);
-        await client.query('DELETE FROM users WHERE id = $1', [created.user.id]);
+      logger.warn('Failed to send facility admin account email; user/facility kept and email marked failed', {
+        toEmail: adminEmail,
+        error: err?.message || 'Email delivery failed',
       });
-      const e = new Error('Failed to send email. Facility admin was not created. Check SMTP and try again.');
-      e.status = 502;
-      throw e;
+      emailDelivered = false;
+      emailError = err?.message || 'Email delivery failed';
     }
 
     await logAdminAction({
@@ -485,7 +482,8 @@ export async function createFacilityAdmin(req, res, next) {
       facility: created.facility,
       admin: { ...created.user, role: 'facility_admin' },
       temporaryPassword,
-      emailDelivered: true,
+      emailDelivered,
+      emailError,
     });
   } catch (err) {
     return next(mapCreateAdminError(err));

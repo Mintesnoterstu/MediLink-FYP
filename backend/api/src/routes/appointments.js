@@ -45,13 +45,21 @@ router.post('/', authRequired, validateBody(createSchema), async (req, res, next
     const doctorId = b.doctorId || b.providerId;
     const appointmentDate = b.appointmentDate || b.date;
     const created = await withRequestSession(req, async (client) => {
+      let resolvedPatientId = b.patientId;
+      const patientByUser = await client.query(
+        'SELECT id FROM patients WHERE user_id = $1 LIMIT 1',
+        [b.patientId],
+      );
+      if (patientByUser.rows[0]?.id) {
+        resolvedPatientId = patientByUser.rows[0].id;
+      }
       const r = await client.query(
         `
         INSERT INTO appointments (patient_id, doctor_id, facility_id, appointment_date, reason, status)
         VALUES ($1, $2, $3, $4, $5, 'scheduled')
         RETURNING *
       `,
-        [b.patientId, doctorId, b.facilityId || null, appointmentDate, b.reason || b.type || null],
+        [resolvedPatientId, doctorId, b.facilityId || null, appointmentDate, b.reason || b.type || null],
       );
       return r.rows[0];
     });

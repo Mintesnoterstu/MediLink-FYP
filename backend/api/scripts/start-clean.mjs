@@ -7,8 +7,10 @@ const port = Number(process.env.PORT || 3001);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load workspace .env so DATABASE_URL is available for migrations.
+// Load env from workspace and API package so DATABASE_URL is available for migrations.
+// API-level values override workspace-level values when both exist.
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 function killPortWindows(targetPort) {
   try {

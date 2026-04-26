@@ -234,10 +234,14 @@ router.get('/patient/:id/dashboard', authRequired, requireRole('doctor', 'nurse'
 
       const recordsR = await client.query(
         `
-        SELECT id, record_type, record_date, encrypted_data, created_by, created_at, status
-        FROM health_records
-        WHERE patient_id = $1
-        ORDER BY created_at DESC
+        SELECT hr.id, hr.record_type, hr.record_date, hr.encrypted_data, hr.created_by, hr.created_at, hr.status,
+               u.full_name AS created_by_name,
+               f.name AS facility_name
+        FROM health_records hr
+        LEFT JOIN users u ON u.id = hr.created_by
+        LEFT JOIN facilities f ON f.id = hr.facility_id
+        WHERE hr.patient_id = $1
+        ORDER BY hr.created_at DESC
         LIMIT 200
       `,
         [req.params.id],
@@ -255,6 +259,8 @@ router.get('/patient/:id/dashboard', authRequired, requireRole('doctor', 'nurse'
           record_type: r.record_type,
           record_date: r.record_date,
           created_by: r.created_by,
+          created_by_name: r.created_by_name,
+          facility_name: r.facility_name,
           created_at: r.created_at,
           status: r.status,
           data,
@@ -314,10 +320,14 @@ router.get('/patient/:id/data', authRequired, requireRole('doctor', 'nurse'), as
 
       const recordsR = await client.query(
         `
-        SELECT id, record_type, record_date, encrypted_data, created_by, created_at, status
-        FROM health_records
-        WHERE patient_id = $1
-        ORDER BY created_at DESC
+        SELECT hr.id, hr.record_type, hr.record_date, hr.encrypted_data, hr.created_by, hr.created_at, hr.status,
+               u.full_name AS created_by_name,
+               f.name AS facility_name
+        FROM health_records hr
+        LEFT JOIN users u ON u.id = hr.created_by
+        LEFT JOIN facilities f ON f.id = hr.facility_id
+        WHERE hr.patient_id = $1
+        ORDER BY hr.created_at DESC
         LIMIT 200
       `,
         [req.params.id],
@@ -335,6 +345,8 @@ router.get('/patient/:id/data', authRequired, requireRole('doctor', 'nurse'), as
           record_type: r.record_type,
           record_date: r.record_date,
           created_by: r.created_by,
+          created_by_name: r.created_by_name,
+          facility_name: r.facility_name,
           created_at: r.created_at,
           status: r.status,
           data,
@@ -424,6 +436,21 @@ const createRecordSchema = Joi.object({
 const scopedRecordSchema = Joi.object({
   recordDate: Joi.string().isoDate().optional(),
   encryptedData: Joi.object().required(),
+});
+
+const attachmentSchema = Joi.object({
+  name: Joi.string().min(1).required(),
+  type: Joi.string().valid('image/jpeg', 'image/png', 'application/pdf').required(),
+  dataUrl: Joi.string().pattern(/^data:(image\/jpeg|image\/png|application\/pdf);base64,/).required(),
+});
+
+const soapSaveSchema = Joi.object({
+  subjective: Joi.object().default({}),
+  objective: Joi.object().default({}),
+  assessment: Joi.object().default({}),
+  plan: Joi.object().default({}),
+  attachments: Joi.array().items(attachmentSchema).max(5).default([]),
+  recordDate: Joi.string().isoDate().optional(),
 });
 
 async function createRecordAndAutoRevoke({ req, patientId, recordType, recordDate, encryptedData }) {
@@ -612,27 +639,58 @@ router.post('/patient/:id/treatment', authRequired, requireRole('doctor', 'nurse
   }
 });
 
-router.post('/patient/:id/complete', authRequired, requireRole('doctor', 'nurse'), async (req, res, next) => {
+router.post('/patient/:id/complete', authRequired, requireRole('doctor', 'nurse'), validateBody(soapSaveSchema), async (req, res, next) => {
   try {
-    const payload = req.body || {};
-    const entries = Object.entries(payload).filter(([, value]) => value && typeof value === 'object' && Object.keys(value).length > 0);
-    if (entries.length === 0) return res.status(400).json({ error: 'No section data provided' });
+    const payload = req.validatedBody || {};
+    const sectionData = {
+      subjective: payload.subjective || {},
+      objective: payload.objective || {},
+      assessment: payload.assessment || {},
+      plan: payload.plan || {},
+    };
+    const hasSectionData = Object.values(sectionData).some(
+      (v) => v && typeof v === 'object' && Object.keys(v).length > 0,
+    );
+    if (!hasSectionData) return res.status(400).json({ error: 'No SOAP section data provided' });
 
-    const allowed = new Set(['vitals', 'symptoms', 'examination', 'diagnosis', 'lab_order', 'prescription', 'treatment_plan', 'clinical_note']);
-    const inserted = [];
-    for (const [section, value] of entries) {
-      if (!allowed.has(section)) continue;
-      const mappedType = section === 'lab_order' ? 'lab' : section === 'clinical_note' ? 'note' : section;
-      const record = await createRecordAndAutoRevoke({
-        req,
-        patientId: req.params.id,
-        recordType: mappedType,
-        encryptedData: value,
-      });
-      inserted.push(record);
-      break;
-    }
-    return res.status(201).json({ success: true, records: inserted });
+    const encryptedSoapRecord = {
+      ...sectionData,
+      attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
+      format: 'SOAP',
+    };
+
+    const record = await createRecordAndAutoRevoke({
+      req,
+      patientId: req.params.id,
+      recordType: 'soap_note',
+      recordDate: payload.recordDate,
+      encryptedData: encryptedSoapRecord,
+    });
+
+    const visit = await withRequestSession(req, async (client) => {
+      const r = await client.query(
+        `
+        INSERT INTO patient_visits (
+          patient_id, doctor_id, visit_date, subjective, objective, assessment, plan, attachments
+        )
+        VALUES ($1, $2, COALESCE($3::timestamptz, now()), $4::jsonb, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb)
+        RETURNING id, patient_id, doctor_id, visit_date, created_at
+      `,
+        [
+          req.params.id,
+          req.user.id,
+          payload.recordDate || null,
+          JSON.stringify(sectionData.subjective || {}),
+          JSON.stringify(sectionData.objective || {}),
+          JSON.stringify(sectionData.assessment || {}),
+          JSON.stringify(sectionData.plan || {}),
+          JSON.stringify(Array.isArray(payload.attachments) ? payload.attachments : []),
+        ],
+      );
+      return r.rows[0];
+    });
+
+    return res.status(201).json({ success: true, record, visit });
   } catch (err) {
     return next(err);
   }

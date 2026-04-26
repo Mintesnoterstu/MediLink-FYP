@@ -5,21 +5,15 @@ import {
   Alert,
   Card,
   CardContent,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   Chip,
   Button,
   Stack,
-  TableContainer,
-  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
+  Grid,
 } from '@mui/material';
 import { useUI } from '@/contexts/UIContext';
 import { apiClient } from '@/services/apiClient';
@@ -34,6 +28,7 @@ export const MyRecordsPage: React.FC = () => {
   const [error, setError] = React.useState('');
   const [disputeTarget, setDisputeTarget] = React.useState<string | null>(null);
   const [disputeReason, setDisputeReason] = React.useState('');
+  const [selected, setSelected] = React.useState<any | null>(null);
 
   const load = React.useCallback(async () => {
     try {
@@ -57,9 +52,11 @@ export const MyRecordsPage: React.FC = () => {
     const onRefresh = () => load();
     window.addEventListener('focus', onRefresh);
     window.addEventListener('patient-dashboard-updated', onRefresh as EventListener);
+    const interval = window.setInterval(onRefresh, 10000);
     return () => {
       window.removeEventListener('focus', onRefresh);
       window.removeEventListener('patient-dashboard-updated', onRefresh as EventListener);
+      window.clearInterval(interval);
     };
   }, [load]);
 
@@ -99,6 +96,31 @@ export const MyRecordsPage: React.FC = () => {
       .join(' | ');
   };
 
+  const humanizeLabel = (key: string) =>
+    key
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      .trim();
+
+  const renderSoapSection = (title: string, section: any) => {
+    if (!section || typeof section !== 'object') return null;
+    const entries = Object.entries(section).filter(([, v]) => String(v ?? '').trim() !== '');
+    if (entries.length === 0) return null;
+    return (
+      <Box>
+        <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+          {title}
+        </Typography>
+        {entries.map(([k, v]) => (
+          <Typography key={k} variant="body2" sx={{ mb: 0.25 }}>
+            <strong>{humanizeLabel(k)}:</strong> {String(v)}
+          </Typography>
+        ))}
+      </Box>
+    );
+  };
+
   return (
     <Box>
       <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
@@ -111,55 +133,47 @@ export const MyRecordsPage: React.FC = () => {
             {isAmharic ? 'የሕክምና መዝገቦች' : 'Medical Records'}
           </Typography>
           {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
-          <TableContainer component={Paper} sx={{ border: '1px solid', borderColor: 'divider' }}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>{isAmharic ? 'ቀን' : 'Date'}</TableCell>
-                <TableCell>{isAmharic ? 'አይነት' : 'Type'}</TableCell>
-                <TableCell>{isAmharic ? 'የፈጠረው' : 'Created By'}</TableCell>
-                <TableCell>{isAmharic ? 'ሁኔታ' : 'Status'}</TableCell>
-                <TableCell>{isAmharic ? 'ዝርዝር' : 'Data'}</TableCell>
-                <TableCell>{isAmharic ? 'እርምጃ' : 'Action'}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow><TableCell colSpan={6}>Loading...</TableCell></TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow><TableCell colSpan={6}>No records yet.</TableCell></TableRow>
-              ) : rows.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.record_date ? new Date(r.record_date).toLocaleDateString() : new Date(r.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell>{prettyType(r.record_type)}</TableCell>
-                  <TableCell>{r.created_by_name}</TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      color={r.status === 'approved' ? 'success' : r.status === 'disputed' ? 'error' : 'warning'}
-                      label={String(r.status || '').toUpperCase()}
-                    />
-                  </TableCell>
-                  <TableCell>{formatData(r.data)}</TableCell>
-                  <TableCell>
-                    {r.status === 'pending' ? (
-                      <Stack direction="row" spacing={1}>
-                        <Button size="small" variant="contained" color="success" onClick={() => onApprove(r.id)}>
-                          {isAmharic ? 'አጽድቅ' : 'APPROVE'}
-                        </Button>
-                        <Button size="small" variant="outlined" color="error" onClick={() => setDisputeTarget(r.id)}>
-                          {isAmharic ? 'ክርክር' : 'DISPUTE'}
-                        </Button>
-                      </Stack>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          </TableContainer>
+          <Grid container spacing={1.5}>
+            {loading && (
+              <Grid item xs={12}><Typography variant="body2">Loading...</Typography></Grid>
+            )}
+            {!loading && rows.length === 0 && (
+              <Grid item xs={12}><Typography variant="body2">No records yet.</Typography></Grid>
+            )}
+            {!loading && rows.map((r) => (
+              <Grid item xs={12} md={6} key={r.id}>
+                <Card variant="outlined" sx={{ borderRadius: 2 }}>
+                  <CardContent>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="subtitle2" fontWeight={700}>{prettyType(r.record_type)}</Typography>
+                      <Chip
+                        size="small"
+                        color={r.status === 'approved' ? 'success' : r.status === 'disputed' ? 'error' : 'warning'}
+                        label={String(r.status || '').toUpperCase()}
+                      />
+                    </Stack>
+                    <Typography variant="body2">Date: {r.record_date ? new Date(r.record_date).toLocaleDateString() : new Date(r.created_at).toLocaleDateString()}</Typography>
+                    <Typography variant="body2">Doctor: {r.created_by_name || '-'}</Typography>
+                    <Typography variant="body2">Facility: {r.facility_name || '-'}</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{formatData(r.data)}</Typography>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
+                      <Button size="small" variant="outlined" onClick={() => setSelected(r)}>View Details</Button>
+                      {r.status === 'pending' ? (
+                        <>
+                          <Button size="small" variant="contained" color="success" onClick={() => onApprove(r.id)}>
+                            {isAmharic ? 'አጽድቅ' : 'APPROVE'}
+                          </Button>
+                          <Button size="small" variant="outlined" color="error" onClick={() => setDisputeTarget(r.id)}>
+                            {isAmharic ? 'ክርክር' : 'DISPUTE'}
+                          </Button>
+                        </>
+                      ) : null}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         </CardContent>
       </Card>
 
@@ -195,6 +209,52 @@ export const MyRecordsPage: React.FC = () => {
           <Button color="error" variant="contained" onClick={onDispute}>
             {isAmharic ? 'አስገባ' : 'Submit'}
           </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={Boolean(selected)} onClose={() => setSelected(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Record Details</DialogTitle>
+        <DialogContent>
+          {selected ? (
+            <Stack spacing={1} sx={{ mt: 1 }}>
+              <Typography variant="body2"><strong>Type:</strong> {prettyType(selected.record_type)}</Typography>
+              <Typography variant="body2"><strong>Date:</strong> {selected.record_date ? new Date(selected.record_date).toLocaleDateString() : new Date(selected.created_at).toLocaleDateString()}</Typography>
+              <Typography variant="body2"><strong>Doctor:</strong> {selected.created_by_name || '-'}</Typography>
+              <Typography variant="body2"><strong>Facility:</strong> {selected.facility_name || '-'}</Typography>
+              <TextField
+                multiline
+                minRows={8}
+                value={(() => {
+                  const d = selected.data || {};
+                  if (d && typeof d === 'object' && (d.subjective || d.objective || d.assessment || d.plan)) {
+                    return 'Patient-friendly SOAP view is shown below.';
+                  }
+                  return JSON.stringify(d, null, 2);
+                })()}
+                InputProps={{ readOnly: true }}
+              />
+              {selected?.data && (selected.data.subjective || selected.data.objective || selected.data.assessment || selected.data.plan) && (
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                  {renderSoapSection('Subjective (What patient says)', selected.data.subjective)}
+                  {renderSoapSection('Objective (Clinical findings)', selected.data.objective)}
+                  {renderSoapSection('Assessment (Diagnosis)', selected.data.assessment)}
+                  {renderSoapSection('Plan (Treatment and follow-up)', selected.data.plan)}
+                </Stack>
+              )}
+              {Array.isArray(selected?.data?.attachments) && selected.data.attachments.length > 0 && (
+                <Stack spacing={0.5}>
+                  <Typography variant="subtitle2">Attachments</Typography>
+                  {selected.data.attachments.map((a: any, idx: number) => (
+                    <a key={`${a?.name || 'file'}-${idx}`} href={a?.dataUrl} download={a?.name || `attachment-${idx + 1}`}>
+                      {a?.name || `Attachment ${idx + 1}`}
+                    </a>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelected(null)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

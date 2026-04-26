@@ -2,12 +2,21 @@ import nodemailer from 'nodemailer';
 import { logger } from '../utils/logger.js';
 import { withMedilinkSession } from '../config/database.js';
 
+function normalizeEnvValue(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  // Remove surrounding single/double quotes if present.
+  return raw.replace(/^['"]|['"]$/g, '').trim();
+}
+
 function readMailConfig() {
-  const host = process.env.SMTP_HOST;
+  const host = normalizeEnvValue(process.env.SMTP_HOST);
   const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.MAIL_FROM || user || 'no-reply@medilink.local';
+  const user = normalizeEnvValue(process.env.SMTP_USER).toLowerCase();
+  // Gmail app passwords are often copied with spaces (xxxx xxxx xxxx xxxx).
+  // Normalize here so authentication works with either format.
+  const pass = normalizeEnvValue(process.env.SMTP_PASS).replace(/\s+/g, '');
+  const from = normalizeEnvValue(process.env.MAIL_FROM) || user || 'no-reply@medilink.local';
   return { host, port, user, pass, from };
 }
 
@@ -50,13 +59,46 @@ function createTransporter() {
 const mailer = createTransporter();
 const transporter = mailer.transporter;
 const transportMode = mailer.mode;
+const smtpState = {
+  checked: false,
+  verified: false,
+  lastError: null,
+};
+
+async function verifySmtpConnection() {
+  if (!transporter || transportMode !== 'smtp') return;
+  try {
+    await transporter.verify();
+    smtpState.checked = true;
+    smtpState.verified = true;
+    smtpState.lastError = null;
+    logger.info('SMTP connection verified successfully', { mode: transportMode });
+  } catch (error) {
+    smtpState.checked = true;
+    smtpState.verified = false;
+    smtpState.lastError = String(error?.message || error);
+    logger.warn('SMTP verification failed', { error: smtpState.lastError, mode: transportMode });
+  }
+}
+
+// Fire-and-forget startup check so UI status reflects auth failures.
+void verifySmtpConnection();
 
 export function getEmailStatus() {
   if (transportMode === 'smtp') {
+    if (smtpState.checked && !smtpState.verified) {
+      return {
+        mode: 'smtp',
+        configured: false,
+        message: `SMTP authentication failed: ${smtpState.lastError}`,
+      };
+    }
     return {
       mode: 'smtp',
       configured: true,
-      message: 'SMTP is configured for real-time email delivery.',
+      message: smtpState.verified
+        ? 'SMTP is configured for real-time email delivery.'
+        : 'SMTP is configured. Verifying credentials...',
     };
   }
 
@@ -165,9 +207,17 @@ async function sendAndLogEmail({
       return { transport: transportMode, messageId: null, emailLogId: logId };
     }
     const info = await transporter.sendMail({ from, to: toEmail, subject, text });
+    if (!smtpState.verified) {
+      smtpState.checked = true;
+      smtpState.verified = true;
+      smtpState.lastError = null;
+    }
     await updateEmailLog(logId, { status: 'sent', sentAt: new Date(), errorMessage: null });
     return { transport: transportMode, messageId: info?.messageId || null, emailLogId: logId };
   } catch (e) {
+    smtpState.checked = true;
+    smtpState.verified = false;
+    smtpState.lastError = String(e?.message || e);
     await updateEmailLog(logId, { status: 'failed', sentAt: null, errorMessage: String(e?.message || e) });
     throw e;
   }

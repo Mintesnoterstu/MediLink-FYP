@@ -45,23 +45,23 @@ export const Footer: React.FC = () => {
           {/* Quick Links */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              {isAm ? 'ፈጣን አገናኞች' : 'Quick Links'} / {isAm ? 'Quick Links' : 'ፈጣን አገናኞች'}
+              {isAm ? 'ፈጣን አገናኞች' : 'Quick Links'}
             </Typography>
             <Stack spacing={0.5}>
               <Link href="/" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'መነሻ' : 'Home'} / {isAm ? 'Home' : 'መነሻ'}
+                {isAm ? 'መነሻ' : 'Home'}
               </Link>
               <Link href="/diseases" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'የበሽታ መረጃ' : 'Disease Information'} / {isAm ? 'Disease Information' : 'የበሽታ መረጃ'}
+                {isAm ? 'የበሽታ መረጃ' : 'Disease Information'}
               </Link>
               <Link href="/medicine-hub" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'የመድሀኒት መድረክ' : 'Medicine Hub'} / {isAm ? 'Medicine Hub' : 'የመድሀኒት መድረክ'}
+                {isAm ? 'የመድሀኒት መድረክ' : 'Medicine Hub'}
               </Link>
               <Link href="/about" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'ስለ እኛ' : 'About Us'} / {isAm ? 'About Us' : 'ስለ እኛ'}
+                {isAm ? 'ስለ እኛ' : 'About Us'}
               </Link>
               <Link href="/help" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'እርዳታ' : 'Help'} / {isAm ? 'Help' : 'እርዳታ'}
+                {isAm ? 'እርዳታ' : 'Help'}
               </Link>
             </Stack>
           </Grid>
@@ -69,20 +69,20 @@ export const Footer: React.FC = () => {
           {/* Important Information */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              {isAm ? 'አስፈላጊ መረጃ' : 'Important Information'} / {isAm ? 'Important Information' : 'አስፈላጊ መረጃ'}
+              {isAm ? 'አስፈላጊ መረጃ' : 'Important Information'}
             </Typography>
             <Stack spacing={0.5}>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'የግላዊነት መመሪያ' : 'Privacy Policy'} / {isAm ? 'Privacy Policy' : 'የግላዊነት መመሪያ'}
+                {isAm ? 'የግላዊነት መመሪያ' : 'Privacy Policy'}
               </Link>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'የአገልግሎት ውል' : 'Terms of Service'} / {isAm ? 'Terms of Service' : 'የአገልግሎት ውል'}
+                {isAm ? 'የአገልግሎት ውል' : 'Terms of Service'}
               </Link>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'የሕክምና ማስታወሻ' : 'Medical Disclaimer'} / {isAm ? 'Medical Disclaimer' : 'የሕክምና ማስታወሻ'}
+                {isAm ? 'የሕክምና ማስታወሻ' : 'Medical Disclaimer'}
               </Link>
               <Link href="#" color="inherit" underline="hover" variant="body2">
-                {isAm ? 'የተደራሽነት መግለጫ' : 'Accessibility Statement'} / {isAm ? 'Accessibility Statement' : 'የተደራሽነት መግለጫ'}
+                {isAm ? 'የተደራሽነት መግለጫ' : 'Accessibility Statement'}
               </Link>
             </Stack>
           </Grid>
@@ -90,7 +90,7 @@ export const Footer: React.FC = () => {
           {/* Contact & University */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              {isAm ? 'አግኙን' : 'Contact'} / {isAm ? 'Contact' : 'አግኙን'}
+              {isAm ? 'አግኙን' : 'Contact'}
             </Typography>
             <Stack spacing={0.5} mb={2}>
               <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
@@ -104,7 +104,7 @@ export const Footer: React.FC = () => {
               </Typography>
             </Stack>
             <Typography variant="subtitle2" fontWeight={700}>
-              {isAm ? 'የዩኒቨርሲቲ ግንኙነት' : 'University Affiliation'} / {isAm ? 'University Affiliation' : 'የዩኒቨርሲቲ ግንኙነት'}
+              {isAm ? 'የዩኒቨርሲቲ ግንኙነት' : 'University Affiliation'}
             </Typography>
             <Typography variant="body2">
               {isAm ? 'የ[ዩኒቨርሲቲ ስም] ፕሮጀክት' : 'A [University Name] Initiative'}
@@ -114,7 +114,7 @@ export const Footer: React.FC = () => {
           {/* Social, Apps & Certifications */}
           <Grid item xs={12} sm={6} md={3}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              {isAm ? 'ግንኙነት' : 'Connect'} / {isAm ? 'Connect' : 'ግንኙነት'}
+              {isAm ? 'ግንኙነት' : 'Connect'}
             </Typography>
             <Box display="flex" gap={1}>
               <IconButton size="small" color="inherit">
@@ -133,7 +133,7 @@ export const Footer: React.FC = () => {
 
             <Box mt={2}>
               <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                {isAm ? 'የሞባይል መተግበሪያዎች' : 'Mobile Apps'} / {isAm ? 'Mobile Apps' : 'የሞባይል መተግበሪያዎች'}
+                {isAm ? 'የሞባይል መተግበሪያዎች' : 'Mobile Apps'}
               </Typography>
               <Stack spacing={1}>
                 <Box
@@ -174,7 +174,7 @@ export const Footer: React.FC = () => {
 
             <Box mt={2}>
               <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                {isAm ? 'ማረጋገጫዎች' : 'Certifications'} / {isAm ? 'Certifications' : 'ማረጋገጫዎች'}
+                {isAm ? 'ማረጋገጫዎች' : 'Certifications'}
               </Typography>
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
@@ -213,22 +213,17 @@ export const Footer: React.FC = () => {
         >
           <Box>
             <Typography variant="caption" display="block">
-              © {year} MediLink Ethiopia. {isAm ? 'መብት የተጠበቀ' : 'All rights reserved'}. /{' '}
-              {isAm ? 'All rights reserved' : 'መብት የተጠበቀ'}
+              © {year} MediLink Ethiopia. {isAm ? 'መብት የተጠበቀ' : 'All rights reserved'}.
             </Typography>
             <Typography variant="caption" display="block" sx={{ opacity: 0.8 }}>
               {isAm
                 ? 'ለትምህርት ብቻ ነው። ሁልጊዜ ከፈቃድ ያለው የጤና ባለሙያ ጋር ያማክሩ።'
                 : 'For educational purposes only. Always consult a licensed healthcare professional.'}
-              {' / '}
-              {isAm
-                ? 'For educational purposes only. Always consult a licensed healthcare professional.'
-                : 'ለትምህርት ብቻ ነው። ሁልጊዜ ከፈቃድ ያለው የጤና ባለሙያ ጋር ያማክሩ።'}
             </Typography>
           </Box>
           <Box display="flex" alignItems="center" gap={1.5}>
             <Typography variant="caption">
-              {isAm ? 'ቋንቋ' : 'Language'} / {isAm ? 'Language' : 'ቋንቋ'}:
+              {isAm ? 'ቋንቋ' : 'Language'}:
             </Typography>
             <LanguageSelector />
           </Box>

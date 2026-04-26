@@ -261,9 +261,11 @@ router.get('/records', authRequired, requireRole('patient'), async (req, res, ne
     const rows = await query(
       `
       SELECT hr.id, hr.record_type, hr.record_date, hr.created_at, hr.status, hr.encrypted_data,
-             u.full_name AS created_by_name
+             u.full_name AS created_by_name,
+             f.name AS facility_name
       FROM health_records hr
       JOIN users u ON u.id = hr.created_by
+      LEFT JOIN facilities f ON f.id = hr.facility_id
       WHERE hr.patient_id IN (SELECT id FROM patients WHERE user_id = $1)
       ORDER BY hr.created_at DESC
       LIMIT 300
@@ -284,10 +286,57 @@ router.get('/records', authRequired, requireRole('patient'), async (req, res, ne
         created_at: r.created_at,
         status: r.status,
         created_by_name: r.created_by_name,
+        facility_name: r.facility_name,
         data: decrypted,
       };
     });
     return res.json(out);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/medications', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const r = await query(
+      `
+      SELECT m.id, m.name, m.dosage, m.frequency, m.start_date, m.end_date, m.notes, m.created_at,
+             u.full_name AS prescribed_by_name,
+             f.name AS facility_name
+      FROM medications m
+      JOIN patients p ON p.id = m.patient_id
+      LEFT JOIN users u ON u.id = m.created_by
+      LEFT JOIN facilities f ON f.id = u.facility_id
+      WHERE p.user_id = $1
+      ORDER BY COALESCE(m.start_date, m.created_at::date) DESC, m.created_at DESC
+      LIMIT 300
+    `,
+      [req.user.id],
+    );
+    return res.json(r.rows);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get('/appointments', authRequired, requireRole('patient'), async (req, res, next) => {
+  try {
+    const r = await query(
+      `
+      SELECT a.id, a.appointment_date, a.status, a.reason, a.notes, a.created_at,
+             u.full_name AS doctor_name,
+             f.name AS facility_name
+      FROM appointments a
+      JOIN patients p ON p.id = a.patient_id
+      LEFT JOIN users u ON u.id = a.doctor_id
+      LEFT JOIN facilities f ON f.id = a.facility_id
+      WHERE p.user_id = $1
+      ORDER BY a.appointment_date DESC
+      LIMIT 300
+    `,
+      [req.user.id],
+    );
+    return res.json(r.rows);
   } catch (err) {
     return next(err);
   }
