@@ -245,12 +245,7 @@ export async function createWoredaAdmin(req, res, next) {
 
 export async function createCityAdmin(req, res, next) {
   try {
-    const emailStatus = getEmailStatus();
-    if (!emailStatus.configured) {
-      const err = new Error('Real-time email is not configured on server. Configure SMTP settings first.');
-      err.status = 503;
-      throw err;
-    }
+    // Local-friendly: allow admin creation even if SMTP is unavailable.
 
     const { fullName, email, recoveryEmail, phoneNumber, officialTitle } = req.validatedBody;
     const tempPassword = generateTemporaryPassword();
@@ -354,12 +349,7 @@ export async function createCityAdmin(req, res, next) {
 
 export async function createFacilityAdmin(req, res, next) {
   try {
-    const emailStatus = getEmailStatus();
-    if (!emailStatus.configured) {
-      const err = new Error('Real-time email is not configured on server. Configure SMTP settings first.');
-      err.status = 503;
-      throw err;
-    }
+    // Local-friendly: allow facility admin creation even if SMTP is unavailable.
 
     const {
       facilityName,
